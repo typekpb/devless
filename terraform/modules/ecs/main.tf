@@ -1,0 +1,257 @@
+variable "project_name" {
+  type = string
+}
+
+variable "ecr_repository_url" {
+  type = string
+}
+
+variable "ecr_image_tag" {
+  type    = string
+  default = "latest"
+}
+
+variable "execution_role_arn" {
+  type = string
+}
+
+variable "task_role_arn" {
+  type = string
+}
+
+variable "sqs_queue_url" {
+  type = string
+}
+
+variable "s3_bucket_name" {
+  type = string
+}
+
+variable "sqs_queue_arn" {
+  type = string
+}
+
+variable "github_token_param_arn" {
+  description = "SSM parameter ARN for the GitHub token"
+  type        = string
+}
+
+variable "openai_api_key_param_arn" {
+  description = "SSM parameter ARN for the OpenAI API key"
+  type        = string
+}
+
+variable "common_skills_repo_param_arn" {
+  description = "SSM parameter ARN for the common skills repo URL"
+  type        = string
+}
+
+data "aws_region" "current" {}
+
+# Use default VPC subnets for Fargate tasks
+data "aws_vpc" "default" {
+  default = true
+}
+
+data "aws_subnets" "default" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.default.id]
+  }
+}
+
+resource "aws_ecs_cluster" "main" {
+  name = "${var.project_name}-cluster"
+
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "orchestrator" {
+  name              = "/ecs/${var.project_name}-orchestrator"
+  retention_in_days = 30
+}
+
+resource "aws_ecs_task_definition" "orchestrator" {
+  family                   = "${var.project_name}-orchestrator"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "1024"
+  memory                   = "2048"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name      = "orchestrator"
+    image     = "${var.ecr_repository_url}:${var.ecr_image_tag}"
+    essential = true
+
+    environment = [
+      { name = "SQS_QUEUE_URL", value = var.sqs_queue_url },
+      { name = "S3_BUCKET", value = var.s3_bucket_name },
+      { name = "AWS_REGION", value = data.aws_region.current.name },
+    ]
+
+    secrets = [
+      { name = "GITHUB_TOKEN", valueFrom = var.github_token_param_arn },
+      { name = "OPENAI_API_KEY", valueFrom = var.openai_api_key_param_arn },
+      { name = "COMMON_SKILLS_REPO_URL", valueFrom = var.common_skills_repo_param_arn },
+    ]
+
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.orchestrator.name
+        "awslogs-region"        = data.aws_region.current.name
+        "awslogs-stream-prefix" = "ecs"
+      }
+    }
+
+    stopTimeout = 900
+  }])
+}
+
+# --- ECS Service (long-running, polls SQS) ---
+
+resource "aws_security_group" "orchestrator" {
+  name        = "${var.project_name}-orchestrator"
+  description = "Orchestrator ECS tasks — egress only"
+  vpc_id      = data.aws_vpc.default.id
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_ecs_service" "orchestrator" {
+  name            = "${var.project_name}-orchestrator"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.orchestrator.arn
+  desired_count   = 0
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = data.aws_subnets.default.ids
+    security_groups  = [aws_security_group.orchestrator.id]
+    assign_public_ip = true
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+}
+
+# --- Auto Scaling (scale-to-zero based on SQS depth) ---
+
+resource "aws_appautoscaling_target" "orchestrator" {
+  max_capacity       = 10
+  min_capacity       = 0
+  resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.orchestrator.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+# Scale OUT: +1 task per message above 0
+resource "aws_appautoscaling_policy" "scale_out" {
+  name               = "${var.project_name}-scale-out"
+  policy_type        = "StepScaling"
+  resource_id        = aws_appautoscaling_target.orchestrator.resource_id
+  scalable_dimension = aws_appautoscaling_target.orchestrator.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.orchestrator.service_namespace
+
+  step_scaling_policy_configuration {
+    adjustment_type         = "ExactCapacity"
+    cooldown                = 30
+    metric_aggregation_type = "Average"
+
+    step_adjustment {
+      metric_interval_lower_bound = 0   # 1–4 messages
+      metric_interval_upper_bound = 4
+      scaling_adjustment          = 1
+    }
+    step_adjustment {
+      metric_interval_lower_bound = 4   # 5–9 messages
+      metric_interval_upper_bound = 9
+      scaling_adjustment          = 5
+    }
+    step_adjustment {
+      metric_interval_lower_bound = 9   # 10+ messages
+      scaling_adjustment          = 10
+    }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "sqs_messages_high" {
+  alarm_name          = "${var.project_name}-sqs-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 0
+  alarm_actions       = [aws_appautoscaling_policy.scale_out.arn]
+
+  dimensions = {
+    QueueName = replace(var.sqs_queue_url, "/.*\\//", "")
+  }
+}
+
+# Scale IN to zero: when queue is empty for 5 minutes
+resource "aws_appautoscaling_policy" "scale_in_zero" {
+  name               = "${var.project_name}-scale-in-zero"
+  policy_type        = "StepScaling"
+  resource_id        = aws_appautoscaling_target.orchestrator.resource_id
+  scalable_dimension = aws_appautoscaling_target.orchestrator.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.orchestrator.service_namespace
+
+  step_scaling_policy_configuration {
+    adjustment_type         = "ExactCapacity"
+    cooldown                = 300
+    metric_aggregation_type = "Average"
+
+    step_adjustment {
+      metric_interval_upper_bound = 0
+      scaling_adjustment          = 0
+    }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "sqs_messages_zero" {
+  alarm_name          = "${var.project_name}-sqs-zero"
+  comparison_operator = "LessThanOrEqualToThreshold"
+  evaluation_periods  = 5
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 0
+  alarm_actions       = [aws_appautoscaling_policy.scale_in_zero.arn]
+
+  dimensions = {
+    QueueName = replace(var.sqs_queue_url, "/.*\\//", "")
+  }
+}
+
+# --- Outputs ---
+
+output "cluster_arn" {
+  value = aws_ecs_cluster.main.arn
+}
+
+output "cluster_name" {
+  value = aws_ecs_cluster.main.name
+}
+
+output "task_definition_arn" {
+  value = aws_ecs_task_definition.orchestrator.arn
+}
+
+output "service_name" {
+  value = aws_ecs_service.orchestrator.name
+}

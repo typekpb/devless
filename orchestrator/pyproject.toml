@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "codex-orchestrator"
+version = "0.1.0"
+description = "Codex Dev Team Orchestrator"
+requires-python = ">=3.12"
+dependencies = [
+    "aider-chat>=0.40.0",
+    "boto3>=1.34.0",
+    "PyGithub>=2.1.0",
+    "gitpython>=3.1.40",
+    "pydantic>=2.6.0",
+    "pydantic-settings>=2.2.0",
+    "pyyaml>=6.0",
+    "structlog>=24.1.0",
+    "tenacity>=8.2.0",
+    "transitions>=0.9.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "hypothesis>=6.100.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

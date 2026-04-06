@@ -1,0 +1,84 @@
+name: Codex Dev Team
+description: Integrates the Codex Dev Team pipeline into a project repository by registering a GitHub webhook that points to the deployed API Gateway endpoint.
+
+inputs:
+  aws_role_arn:
+    description: IAM role ARN to assume via OIDC federation (no long-lived credentials required)
+    required: true
+  api_gateway_url:
+    description: Deployed API Gateway webhook endpoint URL (e.g. https://abc123.execute-api.eu-central-1.amazonaws.com/webhook)
+    required: true
+  webhook_secret_param_name:
+    description: SSM Parameter Store name that stores the webhook HMAC secret (SecureString)
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS credentials (OIDC)
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: ${{ inputs.aws_role_arn }}
+        aws-region: eu-central-1
+
+    - name: Retrieve webhook secret from SSM Parameter Store
+      id: secret
+      shell: bash
+      run: |
+        WEBHOOK_SECRET=$(aws ssm get-parameter \
+          --name "${{ inputs.webhook_secret_param_name }}" \
+          --with-decryption \
+          --query 'Parameter.Value' --output text)
+        echo "::add-mask::${WEBHOOK_SECRET}"
+        echo "webhook_secret=${WEBHOOK_SECRET}" >> "$GITHUB_OUTPUT"
+
+    - name: Register GitHub webhook
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        WEBHOOK_SECRET: ${{ steps.secret.outputs.webhook_secret }}
+        API_GATEWAY_URL: ${{ inputs.api_gateway_url }}
+      run: |
+        REPO="${GITHUB_REPOSITORY}"
+
+        # Check if a webhook already exists for this URL
+        EXISTING=$(curl -s -H "Authorization: token ${GITHUB_TOKEN}" \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/${REPO}/hooks")
+
+        HOOK_ID=$(echo "${EXISTING}" | jq -r \
+          --arg url "${API_GATEWAY_URL}" \
+          '.[] | select(.config.url == $url) | .id' | head -n1)
+
+        PAYLOAD=$(jq -n \
+          --arg url "${API_GATEWAY_URL}" \
+          --arg secret "${WEBHOOK_SECRET}" \
+          '{
+            "name": "web",
+            "active": true,
+            "events": ["issues", "issue_comment", "check_run"],
+            "config": {
+              "url": $url,
+              "content_type": "json",
+              "secret": $secret,
+              "insecure_ssl": "0"
+            }
+          }')
+
+        if [ -n "${HOOK_ID}" ] && [ "${HOOK_ID}" != "null" ]; then
+          echo "Updating existing webhook (ID: ${HOOK_ID})..."
+          curl -s -X PATCH \
+            -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/hooks/${HOOK_ID}" \
+            -d "${PAYLOAD}" > /dev/null
+          echo "Webhook updated successfully."
+        else
+          echo "Creating new webhook..."
+          curl -s -X POST \
+            -H "Authorization: token ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${REPO}/hooks" \
+            -d "${PAYLOAD}" > /dev/null
+          echo "Webhook created successfully."
+        fi

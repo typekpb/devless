@@ -1,0 +1,246 @@
+# Codex Dev Team — Infrastructure
+
+Automated coding agent that picks up GitHub issues, generates code changes with
+Aider/OpenAI, and opens Pull Requests. Automatically fixes CI failures on its
+own branches. PRs auto-merge after passing review and checks.
+
+## Architecture
+
+```
+GitHub Webhook → API Gateway → Lambda (webhook_handler) → SQS
+    SQS → ECS Service (orchestrator, auto-scales 0–10 based on queue depth)
+    SQS DLQ → Lambda (dlq_processor) → GitHub comment on failure
+```
+
+Events handled:
+- `issues` / `issue_comment` → full pipeline (clone → Aider → PR)
+- `check_run` (failure on `issue-N` branches) → CI fix pipeline (checkout → Aider fix → push)
+
+## How it works end-to-end
+
+1. You open a GitHub issue describing a feature or bug fix
+2. Webhook fires → Lambda validates HMAC → SQS message queued
+3. ECS auto-scales from 0 → orchestrator picks up the message
+4. Orchestrator clones repo, installs skills, runs Aider, opens PR
+5. CI runs on the PR — if it fails, orchestrator auto-fixes and pushes
+6. You review the PR — once approved + CI green, it auto-merges
+7. ECS scales back to 0 when the queue is empty
+
+---
+
+## Deployment
+
+There are two ways to deploy: automated via GitHub Actions (recommended) or
+manually from your local machine.
+
+### Option A: GitHub Actions (recommended)
+
+Push to `main` and everything deploys automatically. One-time setup:
+
+1. Create the S3 state bucket:
+
+```bash
+aws s3 mb s3://codex-dev-team-tf-state --region eu-central-1
+```
+
+2. Do an initial `terraform apply` locally to create the OIDC role (chicken-and-egg):
+
+```bash
+cd terraform
+cat > terraform.tfvars <<'EOF'
+github_token           = "ghp_..."
+openai_api_key         = "sk-..."
+webhook_secret         = "your-random-webhook-secret"
+github_actions_org     = "your-github-org"
+common_skills_repo_url = "https://github.com/your-org/codex-skills.git"
+EOF
+terraform init
+terraform apply
+```
+
+3. Note the `github_actions_role_arn` output and add these GitHub Actions secrets to this repo:
+
+| Secret | Value |
+|---|---|
+| `AWS_REGION` | `eu-central-1` |
+| `AWS_ROLE_ARN` | the `github_actions_role_arn` output |
+| `TF_VAR_github_token` | your GitHub PAT |
+| `TF_VAR_openai_api_key` | your OpenAI API key |
+| `TF_VAR_webhook_secret` | your webhook HMAC secret |
+| `TF_VAR_github_actions_org` | your GitHub org name |
+| `TF_VAR_common_skills_repo_url` | your common skills repo URL |
+
+4. Push to `main`. The `deploy.yml` workflow handles everything from now on:
+   - `terraform apply` (infra changes)
+   - Docker build + push to ECR
+   - ECS redeployment
+
+Every subsequent push to `main` deploys automatically. No manual steps.
+
+### Option B: Manual deployment
+
+If you prefer to deploy without CI/CD:
+
+1. Create the S3 state bucket:
+
+```bash
+aws s3 mb s3://codex-dev-team-tf-state --region eu-central-1
+```
+
+2. Create `terraform/terraform.tfvars`:
+
+```hcl
+github_token           = "ghp_..."
+openai_api_key         = "sk-..."
+webhook_secret         = "your-random-webhook-secret"
+github_actions_org     = "your-github-org"
+common_skills_repo_url = "https://github.com/your-org/codex-skills.git"
+```
+
+3. Deploy infrastructure:
+
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+
+4. Build and push the orchestrator image:
+
+```bash
+ECR_URL=$(terraform output -raw ecr_repository_url)
+
+aws ecr get-login-password --region eu-central-1 | \
+  docker login --username AWS --password-stdin "$ECR_URL"
+
+docker build -t "$ECR_URL:latest" ../orchestrator/
+docker push "$ECR_URL:latest"
+```
+
+5. Trigger ECS redeployment:
+
+```bash
+aws ecs update-service \
+  --cluster codex-dev-team-cluster \
+  --service codex-dev-team-orchestrator \
+  --force-new-deployment \
+  --region eu-central-1
+```
+
+Repeat steps 3–5 for every change.
+
+---
+
+## Bootstrapping a target repository
+
+Once the infrastructure is deployed, each repo you want Codex to work on
+needs a one-time webhook registration and a CI workflow.
+
+### Required: CI workflow
+
+`.github/workflows/ci.yml` — must run on pull requests so Codex can detect
+failures and auto-fix them. The actual steps depend on your language/stack:
+
+```yaml
+name: CI
+on:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Add your language-specific build/test steps here, e.g.:
+      # Python:  pip install -e ".[test]" && pytest
+      # Node.js: npm ci && npm test
+      # Go:      go test ./...
+      # Java:    mvn verify
+      # Rust:    cargo test
+      - run: <your-test-command>
+```
+
+### One-time: webhook registration
+
+`.github/workflows/codex-setup.yml` — run once via Actions → Run workflow:
+
+```yaml
+name: Codex Dev Team Setup
+on:
+  workflow_dispatch:
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: your-org/codex-infra/.github/actions/codex-dev-team@main
+        with:
+          aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
+          api_gateway_url: ${{ secrets.CODEX_API_URL }}
+          webhook_secret_param_name: /codex-dev-team/webhook-secret
+```
+
+Add `AWS_ROLE_ARN` and `CODEX_API_URL` (the `api_gateway_url` terraform output)
+as secrets in the target repo, then run the workflow.
+
+### Optional: project config
+
+`.codex/config.yml` — customize how Codex processes your repo:
+
+```yaml
+skills_repo: https://github.com/your-org/project-skills.git  # project-specific skills
+max_iterations: 10       # max Aider retry loops (default: 10)
+test_command: npm test   # command Aider runs to verify changes (default: pytest)
+```
+
+The `test_command` should match whatever your CI runs. Examples:
+- Python: `pytest`
+- Node.js: `npm test`
+- Go: `go test ./...`
+- Java: `mvn test`
+- Rust: `cargo test`
+- Generic: `make test`
+
+### Optional: repo-specific skills
+
+```
+.agents/skills/
+  my-skill/
+    SKILL.md
+```
+
+### Auto-merge setup
+
+In the target repo settings:
+1. Enable "Allow auto-merge" under General → Pull Requests
+2. Add a branch protection rule on the default branch:
+   - Require pull request reviews (at least 1 approval)
+   - Require status checks to pass (select your CI workflow)
+
+### Expected repo structure
+
+Any language, any framework — just needs a CI workflow and optionally a config:
+
+```
+your-project/
+├── .codex/config.yml           # Optional: test_command, skills_repo, max_iterations
+├── .agents/skills/             # Optional: repo-specific Codex skills
+├── .github/workflows/
+│   ├── ci.yml                  # Required: runs your tests on PRs
+│   └── codex-setup.yml         # One-time: registers the webhook
+└── ...                         # Your code (any language/structure)
+```
+
+Then open an issue — Codex picks it up, posts status comments, opens a PR,
+auto-fixes CI failures, and auto-merges after approval.
+
+---
+
+## Prerequisites
+
+- AWS account with CLI configured
+- Terraform >= 1.10
+- Docker
+- GitHub personal access token (repo scope)
+- OpenAI API key

@@ -1,0 +1,81 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  TF_VAR_github_token: ${{ secrets.TF_VAR_github_token }}
+  TF_VAR_openai_api_key: ${{ secrets.TF_VAR_openai_api_key }}
+  TF_VAR_webhook_secret: ${{ secrets.TF_VAR_webhook_secret }}
+  TF_VAR_github_actions_org: ${{ secrets.TF_VAR_github_actions_org }}
+  TF_VAR_common_skills_repo_url: ${{ secrets.TF_VAR_common_skills_repo_url }}
+
+jobs:
+  terraform:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    outputs:
+      ecr_repository_url: ${{ steps.tf-output.outputs.ecr_repository_url }}
+      ecs_cluster_name: ${{ steps.tf-output.outputs.ecs_cluster_name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.10"
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
+
+      - name: Export outputs
+        id: tf-output
+        run: |
+          echo "ecr_repository_url=$(terraform output -raw ecr_repository_url)" >> "$GITHUB_OUTPUT"
+          echo "ecs_cluster_name=$(terraform output -raw ecs_cluster_name)" >> "$GITHUB_OUTPUT"
+
+  docker:
+    name: Build & Push Orchestrator Image
+    needs: terraform
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        run: |
+          ECR_URL="${{ needs.terraform.outputs.ecr_repository_url }}"
+          docker build -t "$ECR_URL:${{ github.sha }}" -t "$ECR_URL:latest" orchestrator/
+          docker push "$ECR_URL:${{ github.sha }}"
+          docker push "$ECR_URL:latest"
+
+      - name: Force ECS redeployment
+        run: |
+          aws ecs update-service \
+            --cluster "${{ needs.terraform.outputs.ecs_cluster_name }}" \
+            --service codex-dev-team-orchestrator \
+            --force-new-deployment \
+            --region "${{ env.AWS_REGION }}"
