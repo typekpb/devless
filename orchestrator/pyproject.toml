@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codex-orchestrator"
+name = "codex-infra"
 version = "0.1.0"
 description = "Codex Dev Team Orchestrator"
 requires-python = ">=3.12"

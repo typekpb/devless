@@ -151,7 +151,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Add your language-specific build/test steps here, e.g.:
-      # Python:  pip install -e ".[test]" && pytest
+      # Python:  pip install ".[test]" && pytest
       # Node.js: npm ci && npm test
       # Go:      go test ./...
       # Java:    mvn verify
