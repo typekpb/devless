@@ -1,9 +1,3 @@
-variable "project_name" {
-  type = string
-}
-
-data "aws_region" "current" {}
-
 data "aws_availability_zones" "available" {
   state = "available"
 }
@@ -46,12 +40,4 @@ resource "aws_route_table_association" "public" {
   count          = 2
   subnet_id      = aws_subnet.public[count.index].id
   route_table_id = aws_route_table.public.id
-}
-
-output "vpc_id" {
-  value = aws_vpc.main.id
-}
-
-output "public_subnet_ids" {
-  value = aws_subnet.public[*].id
 }

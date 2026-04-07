@@ -1,65 +1,3 @@
-variable "project_name" {
-  type = string
-}
-
-variable "ecr_repository_url" {
-  type = string
-}
-
-variable "ecr_image_tag" {
-  type    = string
-  default = "latest"
-}
-
-variable "execution_role_arn" {
-  type = string
-}
-
-variable "task_role_arn" {
-  type = string
-}
-
-variable "sqs_queue_url" {
-  type = string
-}
-
-variable "s3_bucket_name" {
-  type = string
-}
-
-variable "sqs_queue_arn" {
-  type = string
-}
-
-variable "github_app_id_param_arn" {
-  description = "SSM parameter ARN for the GitHub App ID"
-  type        = string
-}
-
-variable "openai_api_key_param_arn" {
-  description = "SSM parameter ARN for the OpenAI API key (empty if not using OpenAI)"
-  type        = string
-  default     = ""
-}
-
-variable "github_app_private_key_param_arn" {
-  description = "SSM parameter ARN for the GitHub App private key"
-  type        = string
-}
-
-variable "github_app_installation_id_param_arn" {
-  description = "SSM parameter ARN for the GitHub App installation ID"
-  type        = string
-}
-
-variable "vpc_id" {
-  type = string
-}
-
-variable "subnet_ids" {
-  type = list(string)
-}
-
 data "aws_region" "current" {}
 
 resource "aws_ecs_cluster" "main" {
@@ -161,7 +99,6 @@ resource "aws_appautoscaling_target" "orchestrator" {
   service_namespace  = "ecs"
 }
 
-# Scale OUT: +1 task per message above 0
 resource "aws_appautoscaling_policy" "scale_out" {
   name               = "${var.project_name}-scale-out"
   policy_type        = "StepScaling"
@@ -197,7 +134,6 @@ resource "aws_cloudwatch_metric_alarm" "sqs_messages_high" {
   }
 }
 
-# Scale IN to zero: when queue is empty for 5 minutes
 resource "aws_appautoscaling_policy" "scale_in_zero" {
   name               = "${var.project_name}-scale-in-zero"
   policy_type        = "StepScaling"
@@ -231,22 +167,4 @@ resource "aws_cloudwatch_metric_alarm" "sqs_messages_zero" {
   dimensions = {
     QueueName = replace(var.sqs_queue_url, "/.*\\//", "")
   }
-}
-
-# --- Outputs ---
-
-output "cluster_arn" {
-  value = aws_ecs_cluster.main.arn
-}
-
-output "cluster_name" {
-  value = aws_ecs_cluster.main.name
-}
-
-output "task_definition_arn" {
-  value = aws_ecs_task_definition.orchestrator.arn
-}
-
-output "service_name" {
-  value = aws_ecs_service.orchestrator.name
 }

@@ -1,15 +1,3 @@
-variable "project_name" {
-  type = string
-}
-
-variable "webhook_handler_invoke_arn" {
-  type = string
-}
-
-variable "webhook_handler_function_name" {
-  type = string
-}
-
 resource "aws_apigatewayv2_api" "webhook" {
   name          = "${var.project_name}-webhook"
   protocol_type = "HTTP"
@@ -41,8 +29,4 @@ resource "aws_lambda_permission" "api_gateway" {
   function_name = var.webhook_handler_function_name
   principal     = "apigateway.amazonaws.com"
   source_arn    = "${aws_apigatewayv2_api.webhook.execution_arn}/*/*"
-}
-
-output "api_endpoint" {
-  value = aws_apigatewayv2_api.webhook.api_endpoint
 }

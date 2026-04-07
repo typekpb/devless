@@ -1,41 +1,3 @@
-variable "project_name" {
-  type = string
-}
-
-variable "webhook_handler_role_arn" {
-  type = string
-}
-
-variable "dlq_processor_role_arn" {
-  type = string
-}
-
-variable "sqs_dlq_arn" {
-  type = string
-}
-
-variable "webhook_secret" {
-  type      = string
-  sensitive = true
-}
-
-variable "sqs_queue_url" {
-  type = string
-}
-
-variable "github_app_id" {
-  type = string
-}
-
-variable "github_app_private_key" {
-  type      = string
-  sensitive = true
-}
-
-variable "github_app_installation_id" {
-  type = string
-}
-
 data "aws_region" "current" {}
 
 # --- Zip archives for Lambda code ---
@@ -101,14 +63,4 @@ resource "aws_lambda_event_source_mapping" "dlq_processor" {
   function_name    = aws_lambda_function.dlq_processor.arn
   batch_size       = 1
   enabled          = true
-}
-
-# --- Outputs ---
-
-output "webhook_handler_invoke_arn" {
-  value = aws_lambda_function.webhook_handler.invoke_arn
-}
-
-output "webhook_handler_function_name" {
-  value = aws_lambda_function.webhook_handler.function_name
 }
