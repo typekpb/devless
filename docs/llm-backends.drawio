@@ -1,0 +1,108 @@
+<mxfile host="app.diagrams.net" modified="2026-04-07T00:00:00.000Z" agent="Kiro" version="24.0.0" type="device">
+  <diagram id="llm" name="LLM Backends">
+    <mxGraphModel dx="1100" dy="680" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1000" pageHeight="560" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- ── Orchestrator box ── -->
+        <mxCell id="orch_group" value="ECS Orchestrator" style="fillColor=#FFF3E0;strokeColor=#ED7100;strokeWidth=2;rounded=1;arcSize=8;verticalAlign=top;fontStyle=1;fontColor=#D46200;fontSize=13;spacingTop=4;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="340" height="500" as="geometry"/>
+        </mxCell>
+
+        <!-- Pipeline -->
+        <mxCell id="pipeline" value="Pipeline Runner" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ED7100;fontColor=#fff;strokeColor=none;fontSize=12;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="60" y="60" width="260" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Aider box -->
+        <mxCell id="aider_group" value="Aider" style="fillColor=#E3F2FD;strokeColor=#1976D2;strokeWidth=2;rounded=1;arcSize=8;verticalAlign=top;fontStyle=1;fontColor=#1565C0;fontSize=13;spacingTop=4;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="40" y="130" width="300" height="370" as="geometry"/>
+        </mxCell>
+
+        <!-- Aider core -->
+        <mxCell id="aider_core" value="Aider Core&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;code editing · git ops · test runner&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#1976D2;fontColor=#fff;strokeColor=none;fontSize=12;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="80" y="170" width="220" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Model router -->
+        <mxCell id="router" value="Model Router&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;selects backend from model string&lt;/font&gt;" style="rhombus;whiteSpace=wrap;html=1;fillColor=#1976D2;fontColor=#fff;strokeColor=none;fontSize=11;fontStyle=0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="250" width="140" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- .codex/config.yml -->
+        <mxCell id="config" value=".codex/config.yml&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;model: bedrock/... | o3 | azure/...&lt;/font&gt;" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#FFF9C4;strokeColor=#F9A825;fontSize=11;fontStyle=0;fontColor=#333;" vertex="1" parent="1">
+          <mxGeometry x="80" y="390" width="220" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- ── Backend boxes ── -->
+
+        <!-- Bedrock -->
+        <mxCell id="bedrock_group" value="" style="fillColor=#E8F5E9;strokeColor=#388E3C;strokeWidth=1.5;rounded=1;arcSize=8;dashed=0;" vertex="1" parent="1">
+          <mxGeometry x="440" y="30" width="240" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="bedrock_icon" value="Amazon Bedrock" style="outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#01A88D;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=1;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.resourceIcon;resIcon=mxgraph.aws4.sagemaker;" vertex="1" parent="1">
+          <mxGeometry x="536" y="50" width="48" height="48" as="geometry"/>
+        </mxCell>
+        <mxCell id="bedrock_auth" value="Auth: IAM task role&lt;br&gt;SSM: none&lt;br&gt;&lt;b&gt;Default&lt;/b&gt;" style="text;html=1;fontSize=10;fontColor=#2E7D32;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="455" y="105" width="160" height="45" as="geometry"/>
+        </mxCell>
+
+        <!-- OpenAI -->
+        <mxCell id="openai_group" value="" style="fillColor=#E3F2FD;strokeColor=#1565C0;strokeWidth=1.5;rounded=1;arcSize=8;dashed=0;" vertex="1" parent="1">
+          <mxGeometry x="440" y="190" width="240" height="130" as="geometry"/>
+        </mxCell>
+        <mxCell id="openai_icon" value="OpenAI API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#424242;fontColor=#fff;strokeColor=none;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="210" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="openai_auth" value="Auth: OPENAI_API_KEY&lt;br&gt;SSM: /codex-dev-team/openai-api-key" style="text;html=1;fontSize=10;fontColor=#1565C0;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="455" y="265" width="220" height="40" as="geometry"/>
+        </mxCell>
+
+        <!-- Azure OpenAI -->
+        <mxCell id="azure_group" value="" style="fillColor=#E8EAF6;strokeColor=#283593;strokeWidth=1.5;rounded=1;arcSize=8;dashed=0;" vertex="1" parent="1">
+          <mxGeometry x="440" y="350" width="240" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="azure_icon" value="Azure OpenAI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;fontColor=#fff;strokeColor=none;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="500" y="370" width="120" height="40" as="geometry"/>
+        </mxCell>
+        <mxCell id="azure_auth" value="Auth: AZURE_API_KEY&lt;br&gt;SSM: /codex-dev-team/azure-api-key&lt;br&gt;SSM: /codex-dev-team/azure-api-base&lt;br&gt;SSM: /codex-dev-team/azure-api-version" style="text;html=1;fontSize=10;fontColor=#283593;align=left;verticalAlign=top;" vertex="1" parent="1">
+          <mxGeometry x="455" y="420" width="220" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- ════════ Edges ════════ -->
+
+        <!-- Pipeline → Aider Core -->
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#546E7A;strokeWidth=2;" edge="1" source="pipeline" target="aider_core" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Aider Core → Router -->
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#546E7A;strokeWidth=2;" edge="1" source="aider_core" target="router" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Config → Router -->
+        <mxCell id="e_cfg" value="model" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#F9A825;strokeWidth=1.5;fontSize=10;fontColor=#F9A825;" edge="1" source="config" target="router" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Router → Bedrock -->
+        <mxCell id="e3" value="bedrock/*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#388E3C;strokeWidth=2;fontSize=10;fontColor=#388E3C;fontStyle=1;" edge="1" source="router" target="bedrock_icon" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Router → OpenAI -->
+        <mxCell id="e4" value="o3, gpt-4o, ..." style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#1565C0;strokeWidth=2;fontSize=10;fontColor=#1565C0;" edge="1" source="router" target="openai_icon" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Router → Azure -->
+        <mxCell id="e5" value="azure/*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;strokeColor=#283593;strokeWidth=2;fontSize=10;fontColor=#283593;" edge="1" source="router" target="azure_icon" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

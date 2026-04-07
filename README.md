@@ -129,6 +129,97 @@ Repeat steps 3–5 for every change.
 
 ---
 
+## LLM backend configuration
+
+![LLM Backends](docs/llm-backends.drawio.svg)
+
+> To edit: open [`docs/llm-backends.drawio`](docs/llm-backends.drawio) in [draw.io](https://app.diagrams.net), then export as `llm-backends.drawio.svg`.
+
+Each target repo chooses its LLM backend via `.codex/config.yml`. The
+orchestrator supports three providers. Only one needs to be configured.
+
+---
+
+### Option 1: Amazon Bedrock (default)
+
+Authenticates via the ECS task IAM role — no API keys or SSM parameters needed.
+
+The IAM module already includes `bedrock:InvokeModel` permission on the task
+role. To verify or customize, see `terraform/modules/iam/main.tf`.
+
+`.codex/config.yml`:
+
+```yaml
+model: bedrock/anthropic.claude-sonnet-4-20250514-v1:0
+```
+
+SSM setup: none.
+
+---
+
+### Option 2: OpenAI
+
+Requires a single SSM parameter for the API key.
+
+```bash
+aws ssm put-parameter \
+  --name "/codex-dev-team/openai-api-key" \
+  --type SecureString \
+  --value "sk-..." \
+  --region eu-central-1
+```
+
+Alternatively, set `TF_VAR_openai_api_key` as a GitHub Actions secret or
+environment variable and let Terraform manage the parameter.
+
+`.codex/config.yml`:
+
+```yaml
+model: o3
+```
+
+---
+
+### Option 3: Azure OpenAI
+
+Requires three SSM parameters.
+
+```bash
+aws ssm put-parameter \
+  --name "/codex-dev-team/azure-api-key" \
+  --type SecureString \
+  --value "your-azure-api-key" \
+  --region eu-central-1
+
+aws ssm put-parameter \
+  --name "/codex-dev-team/azure-api-base" \
+  --type String \
+  --value "https://your-resource.openai.azure.com" \
+  --region eu-central-1
+
+aws ssm put-parameter \
+  --name "/codex-dev-team/azure-api-version" \
+  --type String \
+  --value "2024-06-01" \
+  --region eu-central-1
+```
+
+Then add the corresponding environment variables (`AZURE_API_KEY`,
+`AZURE_API_BASE`, `AZURE_API_VERSION`) to the ECS task definition in
+`terraform/modules/ecs/main.tf`.
+
+`.codex/config.yml`:
+
+```yaml
+model: azure/gpt-4o
+```
+
+---
+
+See [`examples/`](examples/) for ready-to-copy config files for each backend.
+
+---
+
 ## Bootstrapping a target repository
 
 Once the infrastructure is deployed, each repo you want Codex to work on
@@ -197,17 +288,26 @@ skills_repo: https://github.com/typekpb/project-skills.git  # optional
 ```yaml
 # OpenAI backend (requires OPENAI_API_KEY on the orchestrator)
 model: o3                # or: gpt-4o, o1, gpt-4-turbo
-test_command: npm test   # command Aider runs to verify changes (default: pytest)
-max_iterations: 10       # max Aider retry loops (default: 10)
+test_command: npm test
+max_iterations: 10
 skills_repo: https://github.com/typekpb/project-skills.git  # optional
+```
+
+```yaml
+# Azure OpenAI backend (requires AZURE_API_KEY, AZURE_API_BASE, AZURE_API_VERSION)
+model: azure/gpt-4o     # must match your Azure deployment name
+test_command: npm test
+max_iterations: 10
+skills_repo: ""
 ```
 
 See [`examples/`](examples/) for ready-to-copy config files.
 
 The `model` field uses Aider's model naming: `bedrock/<model-id>` for Bedrock
-(default), or plain name for OpenAI (e.g. `o3`). When using Bedrock, the ECS
-task role authenticates automatically — no API key needed. For OpenAI, set
-`OPENAI_API_KEY` on the orchestrator via SSM.
+(default), plain name for OpenAI (e.g. `o3`), or `azure/<deployment-name>` for
+Azure OpenAI. Bedrock authenticates via the ECS task role. OpenAI requires
+`OPENAI_API_KEY`. Azure requires `AZURE_API_KEY`, `AZURE_API_BASE`, and
+`AZURE_API_VERSION`.
 
 The `test_command` should match whatever your CI runs. Examples:
 - Python: `pytest`
