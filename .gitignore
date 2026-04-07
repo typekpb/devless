@@ -1,0 +1,6 @@
+terraform/terraform.tfvars
+terraform/github-app-private-key.pem
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.backup
+terraform/.terraform.lock.hcl

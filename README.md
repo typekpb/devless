@@ -45,15 +45,13 @@ aws s3 mb s3://codex-dev-team-tf-state --region eu-central-1
 
 ```bash
 cd terraform
-cat > terraform.tfvars <<'EOF'
-github_app_id              = "123456"
-github_app_private_key     = "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
-github_app_installation_id = "12345678"
-openai_api_key             = "sk-..."
-webhook_secret             = "your-random-webhook-secret"
-github_actions_org         = "your-github-org"
-common_skills_repo_url     = "https://github.com/typekpb/codex-skills.git"
-EOF
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your values (private key is handled separately)
+
+# Save your GitHub App private key PEM file:
+# pbpaste > github-app-private-key.pem   (or copy it however you prefer)
+
+export TF_VAR_github_app_private_key="$(cat github-app-private-key.pem)"
 terraform init
 terraform apply
 ```
@@ -89,22 +87,18 @@ If you prefer to deploy without CI/CD:
 aws s3 mb s3://codex-dev-team-tf-state --region eu-central-1
 ```
 
-2. Create `terraform/terraform.tfvars`:
+2. Create `terraform/terraform.tfvars` from the example:
 
-```hcl
-github_app_id              = "123456"
-github_app_private_key     = "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
-github_app_installation_id = "12345678"
-openai_api_key             = "sk-..."
-webhook_secret             = "your-random-webhook-secret"
-github_actions_org         = "your-github-org"
-common_skills_repo_url     = "https://github.com/typekpb/codex-skills.git"
+```bash
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your values
 ```
 
 3. Deploy infrastructure:
 
 ```bash
 cd terraform
+export TF_VAR_github_app_private_key="$(cat github-app-private-key.pem)"
 terraform init
 terraform apply
 ```
