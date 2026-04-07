@@ -56,18 +56,28 @@ terraform init
 terraform apply
 ```
 
-3. Note the `github_actions_role_arn` output and add these GitHub Actions secrets to this repo:
+3. Note the `github_actions_role_arn` output and add these GitHub Actions secrets
+   to this repo (Settings → Secrets and variables → Actions → New repository secret):
 
 | Secret | Value |
 |---|---|
 | `AWS_REGION` | `eu-central-1` |
-| `AWS_ROLE_ARN` | the `github_actions_role_arn` output |
+| `AWS_ROLE_ARN` | the `github_actions_role_arn` terraform output (see step 2) |
 | `TF_VAR_github_app_id` | your GitHub App ID |
-| `TF_VAR_github_app_private_key` | your GitHub App private key (PEM) |
+| `TF_VAR_github_app_private_key` | your GitHub App private key (full PEM content) |
 | `TF_VAR_github_app_installation_id` | your GitHub App installation ID |
 | `TF_VAR_openai_api_key` | your OpenAI API key (optional, only for OpenAI backend) |
 | `TF_VAR_webhook_secret` | your webhook HMAC secret |
-| `TF_VAR_github_actions_org` | your GitHub org name |
+| `TF_VAR_github_actions_org` | your GitHub org name (e.g. `typekpb`) |
+
+   Get the role ARN from the initial local apply:
+
+   ```bash
+   terraform output github_actions_role_arn
+   ```
+
+   No static AWS keys needed — the workflow uses OIDC federation to assume
+   this role with temporary credentials.
 
 4. Push to `main`. The `deploy.yml` workflow handles everything from now on:
    - `terraform apply` (infra changes)
