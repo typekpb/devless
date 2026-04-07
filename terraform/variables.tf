@@ -21,9 +21,10 @@ variable "github_app_installation_id" {
 }
 
 variable "openai_api_key" {
-  description = "OpenAI API key"
+  description = "OpenAI API key (only needed when using OpenAI backend)"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 variable "webhook_secret" {

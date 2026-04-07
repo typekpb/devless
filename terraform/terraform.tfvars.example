@@ -10,6 +10,8 @@
 
 github_app_id              = "123456"
 github_app_installation_id = "12345678"
-openai_api_key             = "sk-..."
 webhook_secret             = "your-random-webhook-secret"
 github_actions_org         = "your-github-org"
+
+# Optional — only needed when using OpenAI backend instead of Bedrock:
+# openai_api_key           = "sk-..."

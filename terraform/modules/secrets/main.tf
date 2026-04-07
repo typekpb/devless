@@ -18,6 +18,7 @@ variable "github_app_installation_id" {
 variable "openai_api_key" {
   type      = string
   sensitive = true
+  default   = ""
 }
 
 variable "webhook_secret" {
