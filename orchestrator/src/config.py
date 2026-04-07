@@ -10,6 +10,9 @@ class Settings(BaseSettings):
     SQS_QUEUE_URL: str
     S3_BUCKET: str
     AWS_REGION: str
+    GITHUB_APP_ID: str
+    GITHUB_APP_PRIVATE_KEY: str
+    GITHUB_APP_INSTALLATION_ID: str
 
 
 def load_config() -> dict[str, str]:

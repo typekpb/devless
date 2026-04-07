@@ -33,7 +33,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - uses: your-org/codex-infra/.github/actions/codex-dev-team@v1
+      - uses: typekpb/codex-infra/.github/actions/codex-dev-team@v1
         with:
           aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
           api_gateway_url: ${{ secrets.CODEX_API_URL }}
@@ -51,7 +51,7 @@ jobs:
 Add a `.codex/config.yml` to your project repository to customize behavior:
 
 ```yaml
-skills_repo: https://github.com/your-org/codex-skills
+skills_repo: https://github.com/typekpb/codex-skills
 max_iterations: 10
 test_command: "pytest"
 ```

@@ -23,9 +23,17 @@ variable "sqs_queue_url" {
   type = string
 }
 
-variable "github_token" {
+variable "github_app_id" {
+  type = string
+}
+
+variable "github_app_private_key" {
   type      = string
   sensitive = true
+}
+
+variable "github_app_installation_id" {
+  type = string
 }
 
 data "aws_region" "current" {}
@@ -80,7 +88,9 @@ resource "aws_lambda_function" "dlq_processor" {
 
   environment {
     variables = {
-      GITHUB_TOKEN = var.github_token
+      GITHUB_APP_ID              = var.github_app_id
+      GITHUB_APP_PRIVATE_KEY     = var.github_app_private_key
+      GITHUB_APP_INSTALLATION_ID = var.github_app_installation_id
     }
   }
 }

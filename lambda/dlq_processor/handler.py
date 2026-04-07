@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import boto3
-from github import Github
+from github import Auth, Github, GithubIntegration
 
 
 # ---------------------------------------------------------------------------
@@ -34,7 +34,22 @@ def _error(message: str, **extra: Any) -> None:
 
 
 # ---------------------------------------------------------------------------
-# GitHub comment helper (mirrors pr_manager.post_comment logic)
+# GitHub App token helper
+# ---------------------------------------------------------------------------
+
+def _get_installation_token() -> str:
+    """Mint a short-lived GitHub App installation token."""
+    app_id = int(os.environ["GITHUB_APP_ID"])
+    private_key = os.environ["GITHUB_APP_PRIVATE_KEY"]
+    installation_id = int(os.environ["GITHUB_APP_INSTALLATION_ID"])
+
+    auth = Auth.AppAuth(app_id, private_key)
+    gi = GithubIntegration(auth=auth)
+    return gi.get_access_token(installation_id).token
+
+
+# ---------------------------------------------------------------------------
+# GitHub comment helper
 # ---------------------------------------------------------------------------
 
 def _post_comment(repo_full_name: str, issue_number: int, body: str, token: str) -> None:
@@ -57,14 +72,8 @@ _FAILURE_COMMENT = (
 
 
 def lambda_handler(event: dict, context) -> None:
-    """Process messages that landed on the Dead Letter Queue.
-
-    Each SQS record body is the original task payload JSON containing
-    ``issue_number`` and ``repository_full_name``.  The handler posts a
-    failure comment on the corresponding GitHub Issue so the product owner
-    is aware of the problem.
-    """
-    token = os.environ["GITHUB_TOKEN"]
+    """Process messages that landed on the Dead Letter Queue."""
+    token = _get_installation_token()
 
     for record in event.get("Records", []):
         try:

@@ -11,6 +11,7 @@ import sys
 
 import logger as log
 from config import load_config
+from github_app import GitHubAppAuth
 from pipeline import process_message, ClarificationNeeded
 from sqs_consumer import poll_message
 
@@ -31,12 +32,16 @@ def main() -> None:
 
     signal.signal(signal.SIGTERM, _handle_sigterm)
 
-    github_token = os.environ.get("GITHUB_TOKEN", "")
     openai_api_key = os.environ.get("OPENAI_API_KEY", "")
-
-    if not github_token or not openai_api_key:
-        log.error("Missing GITHUB_TOKEN or OPENAI_API_KEY environment variables")
+    if not openai_api_key:
+        log.error("Missing OPENAI_API_KEY environment variable")
         sys.exit(1)
+
+    app_auth = GitHubAppAuth(
+        app_id=cfg["GITHUB_APP_ID"],
+        private_key=cfg["GITHUB_APP_PRIVATE_KEY"],
+        installation_id=cfg["GITHUB_APP_INSTALLATION_ID"],
+    )
 
     while not _shutdown:
         msg = poll_message(queue_url)
@@ -44,7 +49,7 @@ def main() -> None:
             continue
 
         try:
-            process_message(msg, cfg, github_token, openai_api_key)
+            process_message(msg, cfg, app_auth, openai_api_key)
         except ClarificationNeeded:
             log.info("Awaiting user clarification", issue_number=msg.payload.issue_number)
         except Exception as exc:

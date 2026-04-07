@@ -31,8 +31,8 @@ variable "sqs_queue_arn" {
   type = string
 }
 
-variable "github_token_param_arn" {
-  description = "SSM parameter ARN for the GitHub token"
+variable "github_app_id_param_arn" {
+  description = "SSM parameter ARN for the GitHub App ID"
   type        = string
 }
 
@@ -43,6 +43,16 @@ variable "openai_api_key_param_arn" {
 
 variable "common_skills_repo_param_arn" {
   description = "SSM parameter ARN for the common skills repo URL"
+  type        = string
+}
+
+variable "github_app_private_key_param_arn" {
+  description = "SSM parameter ARN for the GitHub App private key"
+  type        = string
+}
+
+variable "github_app_installation_id_param_arn" {
+  description = "SSM parameter ARN for the GitHub App installation ID"
   type        = string
 }
 
@@ -95,7 +105,9 @@ resource "aws_ecs_task_definition" "orchestrator" {
     ]
 
     secrets = [
-      { name = "GITHUB_TOKEN", valueFrom = var.github_token_param_arn },
+      { name = "GITHUB_APP_ID", valueFrom = var.github_app_id_param_arn },
+      { name = "GITHUB_APP_PRIVATE_KEY", valueFrom = var.github_app_private_key_param_arn },
+      { name = "GITHUB_APP_INSTALLATION_ID", valueFrom = var.github_app_installation_id_param_arn },
       { name = "OPENAI_API_KEY", valueFrom = var.openai_api_key_param_arn },
       { name = "COMMON_SKILLS_REPO_URL", valueFrom = var.common_skills_repo_param_arn },
     ]

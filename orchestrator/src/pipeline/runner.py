@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 import logger as log
 from aider_runner import run_aider
 from checkpoint_store import read_checkpoint
+from github_app import GitHubAppAuth
 from github_client import IssueNotifier
 from models import CheckpointState
 from pipeline.stages import TaskPipeline
@@ -18,20 +19,20 @@ from sqs_consumer import SQSMessage, delete_message
 def process_message(
     msg: SQSMessage,
     cfg: dict[str, str],
-    github_token: str,
+    app_auth: GitHubAppAuth,
     openai_api_key: str,
 ) -> None:
     """Route to the right handler based on event type."""
     if msg.payload.event_type == "ci_fix":
-        _process_ci_fix(msg, cfg, github_token, openai_api_key)
+        _process_ci_fix(msg, cfg, app_auth, openai_api_key)
     else:
-        _process_issue(msg, cfg, github_token, openai_api_key)
+        _process_issue(msg, cfg, app_auth, openai_api_key)
 
 
 def _process_issue(
     msg: SQSMessage,
     cfg: dict[str, str],
-    github_token: str,
+    app_auth: GitHubAppAuth,
     openai_api_key: str,
 ) -> None:
     """Run the full pipeline for a new issue or issue comment."""
@@ -57,17 +58,18 @@ def _process_issue(
         )
 
     with tempfile.TemporaryDirectory() as workspace:
+        token = app_auth.token()
         pipeline = TaskPipeline(
             payload=payload,
             cfg=cfg,
-            github_token=github_token,
+            app_auth=app_auth,
             workspace=workspace,
             checkpoint=checkpoint,
         )
 
         if checkpoint.stage != "pending":
             pipeline.repo_path = clone_repo(
-                payload.repository_full_name, github_token, workspace,
+                payload.repository_full_name, token, workspace,
             )
             import git as _git
             _git.Repo(pipeline.repo_path).git.checkout(checkpoint.branch_name)
@@ -87,14 +89,10 @@ def _process_issue(
 def _process_ci_fix(
     msg: SQSMessage,
     cfg: dict[str, str],
-    github_token: str,
+    app_auth: GitHubAppAuth,
     openai_api_key: str,
 ) -> None:
-    """Fix a CI failure on an existing Codex branch.
-
-    Clones the repo, checks out the failing branch, feeds the failure
-    details to Aider, and pushes the fix. The PR already exists.
-    """
+    """Fix a CI failure on an existing Codex branch."""
     payload = msg.payload
     queue_url = cfg["SQS_QUEUE_URL"]
     branch = payload.branch or f"issue-{payload.issue_number}"
@@ -103,14 +101,15 @@ def _process_ci_fix(
 
     log.info("Processing CI fix", issue_number=payload.issue_number, branch=branch)
 
-    notify = IssueNotifier(payload, github_token)
+    token = app_auth.token()
+    notify = IssueNotifier(payload, token)
     notify.comment(
         f"🔄 CI failed on `{branch}`. Codex Dev Team is analyzing the failure and pushing a fix."
     )
 
     with tempfile.TemporaryDirectory() as workspace:
         try:
-            repo_path = clone_repo(payload.repository_full_name, github_token, workspace)
+            repo_path = clone_repo(payload.repository_full_name, token, workspace)
             import git as _git
             _git.Repo(repo_path).git.checkout(branch)
         except Exception as exc:
@@ -139,7 +138,7 @@ def _process_ci_fix(
 
         if result and result.success:
             try:
-                push_branch(repo_path, branch, github_token)
+                push_branch(repo_path, branch, app_auth.token())
                 notify.comment(
                     f"🔧 Codex Dev Team has pushed a fix to `{branch}`. "
                     f"CI should re-run automatically."

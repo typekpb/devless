@@ -6,11 +6,9 @@ own branches. PRs auto-merge after passing review and checks.
 
 ## Architecture
 
-```
-GitHub Webhook → API Gateway → Lambda (webhook_handler) → SQS
-    SQS → ECS Service (orchestrator, auto-scales 0–10 based on queue depth)
-    SQS DLQ → Lambda (dlq_processor) → GitHub comment on failure
-```
+![Architecture](docs/architecture.drawio.svg)
+
+> To edit: open [`docs/architecture.drawio`](docs/architecture.drawio) in [draw.io](https://app.diagrams.net), then export as `architecture.drawio.svg` to update the rendered diagram.
 
 Events handled:
 - `issues` / `issue_comment` → full pipeline (clone → Aider → PR)
@@ -48,11 +46,13 @@ aws s3 mb s3://codex-dev-team-tf-state --region eu-central-1
 ```bash
 cd terraform
 cat > terraform.tfvars <<'EOF'
-github_token           = "ghp_..."
-openai_api_key         = "sk-..."
-webhook_secret         = "your-random-webhook-secret"
-github_actions_org     = "your-github-org"
-common_skills_repo_url = "https://github.com/your-org/codex-skills.git"
+github_app_id              = "123456"
+github_app_private_key     = "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+github_app_installation_id = "12345678"
+openai_api_key             = "sk-..."
+webhook_secret             = "your-random-webhook-secret"
+github_actions_org         = "your-github-org"
+common_skills_repo_url     = "https://github.com/typekpb/codex-skills.git"
 EOF
 terraform init
 terraform apply
@@ -64,7 +64,9 @@ terraform apply
 |---|---|
 | `AWS_REGION` | `eu-central-1` |
 | `AWS_ROLE_ARN` | the `github_actions_role_arn` output |
-| `TF_VAR_github_token` | your GitHub PAT |
+| `TF_VAR_github_app_id` | your GitHub App ID |
+| `TF_VAR_github_app_private_key` | your GitHub App private key (PEM) |
+| `TF_VAR_github_app_installation_id` | your GitHub App installation ID |
 | `TF_VAR_openai_api_key` | your OpenAI API key |
 | `TF_VAR_webhook_secret` | your webhook HMAC secret |
 | `TF_VAR_github_actions_org` | your GitHub org name |
@@ -90,11 +92,13 @@ aws s3 mb s3://codex-dev-team-tf-state --region eu-central-1
 2. Create `terraform/terraform.tfvars`:
 
 ```hcl
-github_token           = "ghp_..."
-openai_api_key         = "sk-..."
-webhook_secret         = "your-random-webhook-secret"
-github_actions_org     = "your-github-org"
-common_skills_repo_url = "https://github.com/your-org/codex-skills.git"
+github_app_id              = "123456"
+github_app_private_key     = "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+github_app_installation_id = "12345678"
+openai_api_key             = "sk-..."
+webhook_secret             = "your-random-webhook-secret"
+github_actions_org         = "your-github-org"
+common_skills_repo_url     = "https://github.com/typekpb/codex-skills.git"
 ```
 
 3. Deploy infrastructure:
@@ -174,7 +178,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - uses: your-org/codex-infra/.github/actions/codex-dev-team@main
+      - uses: typekpb/codex-infra/.github/actions/codex-dev-team@main
         with:
           aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
           api_gateway_url: ${{ secrets.CODEX_API_URL }}
@@ -189,7 +193,7 @@ as secrets in the target repo, then run the workflow.
 `.codex/config.yml` — customize how Codex processes your repo:
 
 ```yaml
-skills_repo: https://github.com/your-org/project-skills.git  # project-specific skills
+skills_repo: https://github.com/typekpb/project-skills.git  # project-specific skills
 max_iterations: 10       # max Aider retry loops (default: 10)
 test_command: npm test   # command Aider runs to verify changes (default: pytest)
 ```
@@ -242,5 +246,5 @@ auto-fixes CI failures, and auto-merges after approval.
 - AWS account with CLI configured
 - Terraform >= 1.10
 - Docker
-- GitHub personal access token (repo scope)
+- GitHub App (with permissions: issues, pull requests, contents, checks)
 - OpenAI API key

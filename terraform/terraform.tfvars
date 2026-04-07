@@ -1,0 +1,7 @@
+github_app_id              = "123456"
+github_app_private_key     = "-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----"
+github_app_installation_id = "12345678"
+openai_api_key             = "sk-..."
+webhook_secret             = "your-random-webhook-secret"
+github_actions_org         = "typekpb"
+common_skills_repo_url     = "https://github.com/typekpb/codex-skills.git"

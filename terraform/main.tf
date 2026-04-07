@@ -22,7 +22,9 @@ module "s3" {
 module "secrets" {
   source                  = "./modules/secrets"
   project_name            = var.project_name
-  github_token            = var.github_token
+  github_app_id           = var.github_app_id
+  github_app_private_key  = var.github_app_private_key
+  github_app_installation_id = var.github_app_installation_id
   openai_api_key          = var.openai_api_key
   webhook_secret          = var.webhook_secret
   common_skills_repo_url  = var.common_skills_repo_url
@@ -59,9 +61,11 @@ module "ecs" {
   sqs_queue_url                 = module.sqs.main_queue_url
   sqs_queue_arn                 = module.sqs.main_queue_arn
   s3_bucket_name                = module.s3.bucket_name
-  github_token_param_arn        = module.secrets.github_token_param_arn
+  github_app_id_param_arn             = module.secrets.github_app_id_param_arn
   openai_api_key_param_arn      = module.secrets.openai_api_key_param_arn
   common_skills_repo_param_arn  = module.secrets.common_skills_repo_param_arn
+  github_app_private_key_param_arn = module.secrets.github_app_private_key_param_arn
+  github_app_installation_id_param_arn = module.secrets.github_app_installation_id_param_arn
 }
 
 module "lambda" {
@@ -72,7 +76,9 @@ module "lambda" {
   sqs_dlq_arn                 = module.sqs.dlq_arn
   sqs_queue_url               = module.sqs.main_queue_url
   webhook_secret              = var.webhook_secret
-  github_token                = var.github_token
+  github_app_id               = var.github_app_id
+  github_app_private_key      = var.github_app_private_key
+  github_app_installation_id  = var.github_app_installation_id
 }
 
 module "api_gateway" {

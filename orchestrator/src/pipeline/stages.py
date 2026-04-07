@@ -9,6 +9,7 @@ from transitions import Machine
 import logger as log
 from aider_runner import run_aider
 from checkpoint_store import write_checkpoint
+from github_app import GitHubAppAuth
 from github_client import IssueNotifier, build_issue_message
 from models import CheckpointState, TaskPayload
 from pr_manager import create_or_update_pr
@@ -48,17 +49,17 @@ class TaskPipeline:
         self,
         payload: TaskPayload,
         cfg: dict[str, str],
-        github_token: str,
+        app_auth: GitHubAppAuth,
         workspace: str,
         checkpoint: CheckpointState,
     ) -> None:
         self.payload = payload
         self.cfg = cfg
-        self.github_token = github_token
+        self.app_auth = app_auth
         self.workspace = workspace
         self.checkpoint = checkpoint
         self.s3_bucket = cfg["S3_BUCKET"]
-        self.notify = IssueNotifier(payload, github_token)
+        self.notify = IssueNotifier(payload, app_auth.token())
         self.repo_path: str = ""
         self.pr_url: str = ""
 
@@ -96,7 +97,7 @@ class TaskPipeline:
         log.info("Cloning repository", repo=self.payload.repository_full_name)
         try:
             self.repo_path = clone_repo(
-                self.payload.repository_full_name, self.github_token, self.workspace,
+                self.payload.repository_full_name, self.app_auth.token(), self.workspace,
             )
         except Exception as exc:
             self._fail(f"Failed to clone repository: {exc}")
@@ -114,7 +115,7 @@ class TaskPipeline:
         )
         codex_cfg = load_codex_config(self.repo_path)
         _install_skills(self.repo_path, codex_cfg.skills_repo)
-        issue_message = build_issue_message(self.payload, self.github_token)
+        issue_message = build_issue_message(self.payload, self.app_auth.token())
 
         try:
             result = run_aider(
@@ -151,7 +152,7 @@ class TaskPipeline:
     def on_enter_pr_created(self) -> None:
         log.info("Pushing branch", branch=self.checkpoint.branch_name)
         try:
-            push_branch(self.repo_path, self.checkpoint.branch_name, self.github_token)
+            push_branch(self.repo_path, self.checkpoint.branch_name, self.app_auth.token())
         except Exception as exc:
             self._fail(f"Failed to push branch: {exc}")
 
@@ -162,7 +163,7 @@ class TaskPipeline:
                 issue_number=self.payload.issue_number,
                 issue_title=self.payload.issue_title,
                 branch=self.checkpoint.branch_name,
-                token=self.github_token,
+                token=self.app_auth.token(),
             )
         except Exception as exc:
             self._fail(f"Failed to create/update Pull Request: {exc}")

@@ -4,10 +4,20 @@ variable "project_name" {
   default     = "codex-dev-team"
 }
 
-variable "github_token" {
-  description = "GitHub personal access token"
+variable "github_app_id" {
+  description = "GitHub App ID"
+  type        = string
+}
+
+variable "github_app_private_key" {
+  description = "GitHub App private key (PEM format)"
   type        = string
   sensitive   = true
+}
+
+variable "github_app_installation_id" {
+  description = "GitHub App installation ID for the target org/account"
+  type        = string
 }
 
 variable "openai_api_key" {

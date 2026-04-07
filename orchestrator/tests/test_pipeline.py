@@ -58,6 +58,12 @@ def _make_cfg() -> dict[str, str]:
     return {"SQS_QUEUE_URL": "https://sqs.test/queue", "S3_BUCKET": "test-bucket", "AWS_REGION": "us-east-1"}
 
 
+def _make_app_auth() -> MagicMock:
+    auth = MagicMock()
+    auth.token.return_value = "fake-installation-token"
+    return auth
+
+
 @dataclass
 class _AiderResult:
     success: bool = True
@@ -90,7 +96,7 @@ def test_full_run_transitions_pending_to_complete(
     pipeline = TaskPipeline(
         payload=_make_payload(),
         cfg=_make_cfg(),
-        github_token="tok",
+        app_auth=_make_app_auth(),
         workspace="/tmp/ws",
         checkpoint=_make_checkpoint("pending"),
     )
@@ -126,7 +132,7 @@ def test_resume_from_agent_loop_skips_clone(
     pipeline = TaskPipeline(
         payload=_make_payload(),
         cfg=_make_cfg(),
-        github_token="tok",
+        app_auth=_make_app_auth(),
         workspace="/tmp/ws",
         checkpoint=_make_checkpoint("agent_loop"),
     )
@@ -169,7 +175,7 @@ def test_clarification_needed_halts_pipeline(
     pipeline = TaskPipeline(
         payload=_make_payload(),
         cfg=_make_cfg(),
-        github_token="tok",
+        app_auth=_make_app_auth(),
         workspace="/tmp/ws",
         checkpoint=_make_checkpoint("pending"),
     )
@@ -196,7 +202,7 @@ def test_clone_failure_posts_error_and_raises(
     pipeline = TaskPipeline(
         payload=_make_payload(),
         cfg=_make_cfg(),
-        github_token="tok",
+        app_auth=_make_app_auth(),
         workspace="/tmp/ws",
         checkpoint=_make_checkpoint("pending"),
     )
@@ -227,7 +233,7 @@ def test_aider_failure_posts_error_and_raises(
     pipeline = TaskPipeline(
         payload=_make_payload(),
         cfg=_make_cfg(),
-        github_token="tok",
+        app_auth=_make_app_auth(),
         workspace="/tmp/ws",
         checkpoint=_make_checkpoint("pending"),
     )
@@ -249,7 +255,7 @@ def test_resume_from_pr_created_only_runs_complete(mock_push, mock_pr, mock_writ
     pipeline = TaskPipeline(
         payload=_make_payload(),
         cfg=_make_cfg(),
-        github_token="tok",
+        app_auth=_make_app_auth(),
         workspace="/tmp/ws",
         checkpoint=_make_checkpoint("pr_created"),
     )
@@ -271,7 +277,7 @@ def test_already_complete_is_noop():
     pipeline = TaskPipeline(
         payload=_make_payload(),
         cfg=_make_cfg(),
-        github_token="tok",
+        app_auth=_make_app_auth(),
         workspace="/tmp/ws",
         checkpoint=_make_checkpoint("complete"),
     )
