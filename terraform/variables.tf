@@ -39,7 +39,7 @@ variable "ecr_image_tag" {
 }
 
 variable "github_actions_org" {
-  description = "GitHub organization for OIDC federation (e.g. your-org)"
+  description = "GitHub organization for OIDC federation (e.g. typekpb)"
   type        = string
 }
 
