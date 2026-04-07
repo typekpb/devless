@@ -51,19 +51,15 @@ variable "github_app_installation_id_param_arn" {
   type        = string
 }
 
+variable "vpc_id" {
+  type = string
+}
+
+variable "subnet_ids" {
+  type = list(string)
+}
+
 data "aws_region" "current" {}
-
-# Use default VPC subnets for Fargate tasks
-data "aws_vpc" "default" {
-  default = true
-}
-
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
-}
 
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
@@ -124,7 +120,7 @@ resource "aws_ecs_task_definition" "orchestrator" {
 resource "aws_security_group" "orchestrator" {
   name        = "${var.project_name}-orchestrator"
   description = "Orchestrator ECS tasks — egress only"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = var.vpc_id
 
   egress {
     from_port   = 0
@@ -142,7 +138,7 @@ resource "aws_ecs_service" "orchestrator" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.default.ids
+    subnets          = var.subnet_ids
     security_groups  = [aws_security_group.orchestrator.id]
     assign_public_ip = true
   }

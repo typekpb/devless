@@ -4,3 +4,7 @@ terraform/.terraform/
 terraform/*.tfstate
 terraform/*.tfstate.backup
 terraform/.terraform.lock.hcl
+
+# Lambda build artifacts
+terraform/modules/lambda/builds/
+*.zip

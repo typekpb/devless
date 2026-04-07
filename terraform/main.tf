@@ -39,6 +39,11 @@ module "ecr" {
   project_name = var.project_name
 }
 
+module "vpc" {
+  source       = "./modules/vpc"
+  project_name = var.project_name
+}
+
 module "iam" {
   source                        = "./modules/iam"
   project_name                  = var.project_name
@@ -53,6 +58,8 @@ module "iam" {
 module "ecs" {
   source                        = "./modules/ecs"
   project_name                  = var.project_name
+  vpc_id                        = module.vpc.vpc_id
+  subnet_ids                    = module.vpc.public_subnet_ids
   ecr_repository_url            = module.ecr.repository_url
   ecr_image_tag                 = var.ecr_image_tag
   execution_role_arn            = module.iam.ecs_execution_role_arn
