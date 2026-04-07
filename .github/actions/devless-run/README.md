@@ -33,7 +33,7 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - uses: typekpb/devless/.github/actions/devless@v1
+      - uses: typekpb/devless/.github/actions/devless-run@v1
         with:
           aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
           api_gateway_url: ${{ secrets.DEVLESS_API_URL }}
