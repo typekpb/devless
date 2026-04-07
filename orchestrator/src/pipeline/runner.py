@@ -131,6 +131,7 @@ def _process_ci_fix(
                 issue_message=fix_message,
                 test_cmd=codex_cfg.test_command,
                 max_iterations=codex_cfg.max_iterations,
+                model=codex_cfg.model,
             )
         except Exception as exc:
             notify.comment(f"⚠️ Aider failed to fix CI: {exc}")

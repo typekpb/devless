@@ -1,7 +1,7 @@
 # Codex Dev Team — Infrastructure
 
 Automated coding agent that picks up GitHub issues, generates code changes with
-Aider/OpenAI, and opens Pull Requests. Automatically fixes CI failures on its
+Aider, and opens Pull Requests. Automatically fixes CI failures on its
 own branches. PRs auto-merge after passing review and checks.
 
 ## Architecture
@@ -65,7 +65,7 @@ terraform apply
 | `TF_VAR_github_app_id` | your GitHub App ID |
 | `TF_VAR_github_app_private_key` | your GitHub App private key (PEM) |
 | `TF_VAR_github_app_installation_id` | your GitHub App installation ID |
-| `TF_VAR_openai_api_key` | your OpenAI API key |
+| `TF_VAR_openai_api_key` | your OpenAI API key (optional, only for OpenAI backend) |
 | `TF_VAR_webhook_secret` | your webhook HMAC secret |
 | `TF_VAR_github_actions_org` | your GitHub org name |
 | `TF_VAR_common_skills_repo_url` | your common skills repo URL |
@@ -187,10 +187,27 @@ as secrets in the target repo, then run the workflow.
 `.codex/config.yml` — customize how Codex processes your repo:
 
 ```yaml
-skills_repo: https://github.com/typekpb/project-skills.git  # project-specific skills
-max_iterations: 10       # max Aider retry loops (default: 10)
+# Amazon Bedrock backend (default — uses ECS task role, no API key needed)
+model: bedrock/anthropic.claude-sonnet-4-20250514-v1:0
 test_command: npm test   # command Aider runs to verify changes (default: pytest)
+max_iterations: 10       # max Aider retry loops (default: 10)
+skills_repo: https://github.com/typekpb/project-skills.git  # optional
 ```
+
+```yaml
+# OpenAI backend (requires OPENAI_API_KEY on the orchestrator)
+model: o3                # or: gpt-4o, o1, gpt-4-turbo
+test_command: npm test   # command Aider runs to verify changes (default: pytest)
+max_iterations: 10       # max Aider retry loops (default: 10)
+skills_repo: https://github.com/typekpb/project-skills.git  # optional
+```
+
+See [`examples/`](examples/) for ready-to-copy config files.
+
+The `model` field uses Aider's model naming: `bedrock/<model-id>` for Bedrock
+(default), or plain name for OpenAI (e.g. `o3`). When using Bedrock, the ECS
+task role authenticates automatically — no API key needed. For OpenAI, set
+`OPENAI_API_KEY` on the orchestrator via SSM.
 
 The `test_command` should match whatever your CI runs. Examples:
 - Python: `pytest`
@@ -241,4 +258,4 @@ auto-fixes CI failures, and auto-merges after approval.
 - Terraform >= 1.10
 - Docker
 - GitHub App (with permissions: issues, pull requests, contents, checks)
-- OpenAI API key
+- OpenAI API key (only if using OpenAI backend instead of Bedrock)

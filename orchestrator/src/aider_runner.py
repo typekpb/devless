@@ -96,6 +96,7 @@ def run_aider(
     issue_message: str,
     test_cmd: str,
     max_iterations: int = 10,
+    model: str = "bedrock/anthropic.claude-sonnet-4-20250514-v1:0",
 ) -> AiderResult:
     """Invoke Aider and return the result.
 
@@ -130,7 +131,7 @@ def run_aider(
         os.chdir(workspace)
 
         io_obj = InputOutput(yes=True)
-        model = Model("o3")
+        model = Model(model)
         coder = Coder.create(
             main_model=model,
             io=io_obj,

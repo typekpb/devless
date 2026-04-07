@@ -123,6 +123,7 @@ class TaskPipeline:
                 issue_message=issue_message,
                 test_cmd=codex_cfg.test_command,
                 max_iterations=codex_cfg.max_iterations,
+                model=codex_cfg.model,
             )
         except Exception as exc:
             self._fail(f"Aider runner raised an unexpected exception: {exc}")

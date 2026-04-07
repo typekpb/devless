@@ -161,7 +161,7 @@ resource "aws_ecs_service" "orchestrator" {
 # --- Auto Scaling (scale-to-zero based on SQS depth) ---
 
 resource "aws_appautoscaling_target" "orchestrator" {
-  max_capacity       = 10
+  max_capacity       = 1
   min_capacity       = 0
   resource_id        = "service/${aws_ecs_cluster.main.name}/${aws_ecs_service.orchestrator.name}"
   scalable_dimension = "ecs:service:DesiredCount"
@@ -182,18 +182,8 @@ resource "aws_appautoscaling_policy" "scale_out" {
     metric_aggregation_type = "Average"
 
     step_adjustment {
-      metric_interval_lower_bound = 0   # 1–4 messages
-      metric_interval_upper_bound = 4
+      metric_interval_lower_bound = 0
       scaling_adjustment          = 1
-    }
-    step_adjustment {
-      metric_interval_lower_bound = 4   # 5–9 messages
-      metric_interval_upper_bound = 9
-      scaling_adjustment          = 5
-    }
-    step_adjustment {
-      metric_interval_lower_bound = 9   # 10+ messages
-      scaling_adjustment          = 10
     }
   }
 }

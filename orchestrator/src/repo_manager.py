@@ -16,6 +16,7 @@ class CodexProjectConfig:
     skills_path: str
     max_iterations: int
     test_command: str
+    model: str
 
 
 def load_codex_config(repo_path: str) -> CodexProjectConfig:
@@ -35,6 +36,7 @@ def load_codex_config(repo_path: str) -> CodexProjectConfig:
         skills_path=str(raw.get("skills_path", "")),
         max_iterations=int(raw.get("max_iterations", os.environ.get("MAX_ITERATIONS", 10))),
         test_command=str(raw.get("test_command", os.environ.get("TEST_COMMAND", "pytest"))),
+        model=str(raw.get("model", os.environ.get("AIDER_MODEL", "bedrock/anthropic.claude-sonnet-4-20250514-v1:0"))),
     )
 
 
