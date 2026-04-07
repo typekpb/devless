@@ -37,8 +37,9 @@ variable "github_app_id_param_arn" {
 }
 
 variable "openai_api_key_param_arn" {
-  description = "SSM parameter ARN for the OpenAI API key"
+  description = "SSM parameter ARN for the OpenAI API key (empty if not using OpenAI)"
   type        = string
+  default     = ""
 }
 
 variable "github_app_private_key_param_arn" {
@@ -95,12 +96,14 @@ resource "aws_ecs_task_definition" "orchestrator" {
       { name = "AWS_REGION", value = data.aws_region.current.name },
     ]
 
-    secrets = [
-      { name = "GITHUB_APP_ID", valueFrom = var.github_app_id_param_arn },
-      { name = "GITHUB_APP_PRIVATE_KEY", valueFrom = var.github_app_private_key_param_arn },
-      { name = "GITHUB_APP_INSTALLATION_ID", valueFrom = var.github_app_installation_id_param_arn },
-      { name = "OPENAI_API_KEY", valueFrom = var.openai_api_key_param_arn },
-    ]
+    secrets = concat(
+      [
+        { name = "GITHUB_APP_ID", valueFrom = var.github_app_id_param_arn },
+        { name = "GITHUB_APP_PRIVATE_KEY", valueFrom = var.github_app_private_key_param_arn },
+        { name = "GITHUB_APP_INSTALLATION_ID", valueFrom = var.github_app_installation_id_param_arn },
+      ],
+      var.openai_api_key_param_arn != "" ? [{ name = "OPENAI_API_KEY", valueFrom = var.openai_api_key_param_arn }] : [],
+    )
 
     logConfiguration = {
       logDriver = "awslogs"
@@ -111,7 +114,7 @@ resource "aws_ecs_task_definition" "orchestrator" {
       }
     }
 
-    stopTimeout = 900
+    stopTimeout = 120
   }])
 }
 
@@ -119,7 +122,7 @@ resource "aws_ecs_task_definition" "orchestrator" {
 
 resource "aws_security_group" "orchestrator" {
   name        = "${var.project_name}-orchestrator"
-  description = "Orchestrator ECS tasks — egress only"
+  description = "Orchestrator ECS tasks - egress only"
   vpc_id      = var.vpc_id
 
   egress {
