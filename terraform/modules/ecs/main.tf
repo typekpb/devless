@@ -41,11 +41,6 @@ variable "openai_api_key_param_arn" {
   type        = string
 }
 
-variable "common_skills_repo_param_arn" {
-  description = "SSM parameter ARN for the common skills repo URL"
-  type        = string
-}
-
 variable "github_app_private_key_param_arn" {
   description = "SSM parameter ARN for the GitHub App private key"
   type        = string
@@ -109,7 +104,6 @@ resource "aws_ecs_task_definition" "orchestrator" {
       { name = "GITHUB_APP_PRIVATE_KEY", valueFrom = var.github_app_private_key_param_arn },
       { name = "GITHUB_APP_INSTALLATION_ID", valueFrom = var.github_app_installation_id_param_arn },
       { name = "OPENAI_API_KEY", valueFrom = var.openai_api_key_param_arn },
-      { name = "COMMON_SKILLS_REPO_URL", valueFrom = var.common_skills_repo_param_arn },
     ]
 
     logConfiguration = {

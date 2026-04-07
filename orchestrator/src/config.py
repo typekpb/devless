@@ -1,4 +1,4 @@
-"""Configuration loader for the Codex Dev Team Orchestrator."""
+"""Configuration loader for the Devless Orchestrator."""
 from __future__ import annotations
 
 from pydantic_settings import BaseSettings

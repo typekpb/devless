@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 _sqs = boto3.client("sqs")
 
 # Branch pattern created by the orchestrator
-_CODEX_BRANCH_RE = re.compile(r"^issue-(\d+)$")
+_DEVLESS_BRANCH_RE = re.compile(r"^issue-(\d+)$")
 
 
 def validate_signature(payload: bytes, secret: str, header: str) -> bool:
@@ -56,7 +56,7 @@ def _build_issue_message(event: dict) -> dict | None:
 
 
 def _build_ci_fix_message(event: dict) -> dict | None:
-    """Build SQS message from a check_run failure on a Codex branch.
+    """Build SQS message from a check_run failure on a Devless branch.
 
     Returns None if the event is not a completed failure on an issue-N branch.
     """
@@ -76,9 +76,9 @@ def _build_ci_fix_message(event: dict) -> dict | None:
         # Can't determine branch from check_run alone without PRs
         return None
 
-    match = _CODEX_BRANCH_RE.match(head_branch)
+    match = _DEVLESS_BRANCH_RE.match(head_branch)
     if not match:
-        return None  # not a Codex-managed branch
+        return None  # not a Devless-managed branch
 
     issue_number = int(match.group(1))
     repository = event.get("repository", {})

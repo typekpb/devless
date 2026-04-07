@@ -1,6 +1,6 @@
 """Property-based tests for webhook payload enqueue behaviour.
 
-# Feature: codex-dev-team, Property 2: Valid webhook payload triggers enqueue and 202
+# Feature: devless, Property 2: Valid webhook payload triggers enqueue and 202
 """
 import hashlib
 import hmac
@@ -55,7 +55,7 @@ def test_valid_payload_enqueues_and_returns_202(
     - Call SQS send_message exactly once
     - Include the issue number in the enqueued MessageBody
 
-    # Feature: codex-dev-team, Property 2: Valid webhook payload triggers enqueue and 202
+    # Feature: devless, Property 2: Valid webhook payload triggers enqueue and 202
     Validates: Requirements 1.5
     """
     # Build a GitHub-style webhook body

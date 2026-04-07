@@ -1,6 +1,6 @@
 """Property-based tests for CheckpointState serialization round-trip.
 
-# Feature: codex-dev-team, Property 8: Checkpoint round-trip
+# Feature: devless, Property 8: Checkpoint round-trip
 """
 import sys
 import os
@@ -34,7 +34,7 @@ def test_checkpoint_round_trip(state: CheckpointState):
 
     Validates: Requirements 2.9, 2.10
     """
-    # Feature: codex-dev-team, Property 8: Checkpoint round-trip
+    # Feature: devless, Property 8: Checkpoint round-trip
     serialized = state.model_dump_json()
     restored = CheckpointState.model_validate_json(serialized)
     assert restored == state

@@ -1,5 +1,5 @@
-name: Codex Dev Team
-description: Integrates the Codex Dev Team pipeline into a project repository by registering a GitHub webhook that points to the deployed API Gateway endpoint.
+name: Devless
+description: Integrates the Devless pipeline into a project repository by registering a GitHub webhook that points to the deployed API Gateway endpoint.
 
 inputs:
   aws_role_arn:

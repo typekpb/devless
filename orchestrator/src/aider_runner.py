@@ -101,8 +101,8 @@ def run_aider(
     """Invoke Aider and return the result.
 
     Runs Aider with the o3 model in non-interactive mode, enabling auto-test
-    with the provided test command. Skills are discovered automatically by
-    Codex from `.agents/skills/` in the workspace.
+    with the provided test command. Skills are discovered automatically
+    from `.agents/skills/` in the workspace.
     Wraps Aider's internal retry loop with an outer cap of ``max_iterations``.
 
     Args:

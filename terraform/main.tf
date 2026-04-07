@@ -27,7 +27,6 @@ module "secrets" {
   github_app_installation_id = var.github_app_installation_id
   openai_api_key          = var.openai_api_key
   webhook_secret          = var.webhook_secret
-  common_skills_repo_url  = var.common_skills_repo_url
 }
 
 module "sqs" {
@@ -63,7 +62,6 @@ module "ecs" {
   s3_bucket_name                = module.s3.bucket_name
   github_app_id_param_arn             = module.secrets.github_app_id_param_arn
   openai_api_key_param_arn      = module.secrets.openai_api_key_param_arn
-  common_skills_repo_param_arn  = module.secrets.common_skills_repo_param_arn
   github_app_private_key_param_arn = module.secrets.github_app_private_key_param_arn
   github_app_installation_id_param_arn = module.secrets.github_app_installation_id_param_arn
 }

@@ -1,4 +1,4 @@
-# .codex/config.yml — Amazon Bedrock backend
+# .devless/config.yml — Amazon Bedrock backend
 #
 # Uses Bedrock via the ECS task role — no API key needed.
 # The task role must have bedrock:InvokeModel permission.
@@ -8,4 +8,3 @@
 model: bedrock/anthropic.claude-sonnet-4-20250514-v1:0   # or: bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0
 test_command: pytest
 max_iterations: 10
-skills_repo: ""

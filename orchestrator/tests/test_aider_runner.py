@@ -1,6 +1,6 @@
 """Property-based tests for Aider message completeness.
 
-# Feature: codex-dev-team, Property 6: System prompt / Aider message completeness
+# Feature: devless, Property 6: System prompt / Aider message completeness
 """
 import sys
 import os
@@ -37,7 +37,7 @@ def test_aider_message_contains_all_components(
     For any combination of issue title, issue body, comment list, and skills
     content, the constructed Aider message must contain all four as substrings.
 
-    # Feature: codex-dev-team, Property 6: System prompt / Aider message completeness
+    # Feature: devless, Property 6: System prompt / Aider message completeness
     Validates: Requirements 2.3
     """
     message = build_issue_message(
@@ -66,7 +66,7 @@ def test_aider_message_without_optional_components(
     """Property 6 (edge case): Message still contains title and body when
     comments and skills are empty.
 
-    # Feature: codex-dev-team, Property 6: System prompt / Aider message completeness
+    # Feature: devless, Property 6: System prompt / Aider message completeness
     Validates: Requirements 2.3
     """
     message = build_issue_message(

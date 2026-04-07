@@ -1,4 +1,4 @@
-"""Entry point for the Codex Dev Team Orchestrator.
+"""Entry point for the Devless Orchestrator.
 
 Runs as a long-lived ECS service that long-polls SQS for tasks.
 See pipeline.py for the per-message processing logic.

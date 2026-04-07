@@ -1,4 +1,4 @@
-"""Data models for the Codex Dev Team Orchestrator."""
+"""Data models for the Devless Orchestrator."""
 from __future__ import annotations
 
 from typing import Literal

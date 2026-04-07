@@ -1,6 +1,6 @@
 """Property-based tests for SQS message deletion only on success.
 
-# Feature: codex-dev-team, Property 3: SQS message deletion only on success
+# Feature: devless, Property 3: SQS message deletion only on success
 """
 import sys
 import os
@@ -56,7 +56,7 @@ def test_delete_called_iff_all_stages_succeed(stage_outcomes, queue_url, receipt
 
     Validates: Requirements 1.7
     """
-    # Feature: codex-dev-team, Property 3: SQS message deletion only on success
+    # Feature: devless, Property 3: SQS message deletion only on success
 
     all_succeeded = all(success for _, success in stage_outcomes)
 

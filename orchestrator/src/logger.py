@@ -1,4 +1,4 @@
-"""Structured JSON logger for the Codex Dev Team Orchestrator."""
+"""Structured JSON logger for the Devless Orchestrator."""
 
 import structlog
 

@@ -1,4 +1,4 @@
-# Codex Dev Team — Infrastructure
+# Devless — Infrastructure
 
 Automated coding agent that picks up GitHub issues, generates code changes with
 Aider, and opens Pull Requests. Automatically fixes CI failures on its
@@ -38,7 +38,7 @@ Push to `main` and everything deploys automatically. One-time setup:
 1. Create the S3 state bucket:
 
 ```bash
-aws s3 mb s3://codex-dev-team-tf-state --region eu-central-1
+aws s3 mb s3://devless-tf-state --region eu-central-1
 ```
 
 2. Do an initial `terraform apply` locally to create the OIDC role (chicken-and-egg):
@@ -68,7 +68,6 @@ terraform apply
 | `TF_VAR_openai_api_key` | your OpenAI API key (optional, only for OpenAI backend) |
 | `TF_VAR_webhook_secret` | your webhook HMAC secret |
 | `TF_VAR_github_actions_org` | your GitHub org name |
-| `TF_VAR_common_skills_repo_url` | your common skills repo URL |
 
 4. Push to `main`. The `deploy.yml` workflow handles everything from now on:
    - `terraform apply` (infra changes)
@@ -84,7 +83,7 @@ If you prefer to deploy without CI/CD:
 1. Create the S3 state bucket:
 
 ```bash
-aws s3 mb s3://codex-dev-team-tf-state --region eu-central-1
+aws s3 mb s3://devless-tf-state --region eu-central-1
 ```
 
 2. Create `terraform/terraform.tfvars` from the example:
@@ -119,8 +118,8 @@ docker push "$ECR_URL:latest"
 
 ```bash
 aws ecs update-service \
-  --cluster codex-dev-team-cluster \
-  --service codex-dev-team-orchestrator \
+  --cluster devless-cluster \
+  --service devless-orchestrator \
   --force-new-deployment \
   --region eu-central-1
 ```
@@ -135,7 +134,7 @@ Repeat steps 3–5 for every change.
 
 > To edit: open [`docs/llm-backends.drawio`](docs/llm-backends.drawio) in [draw.io](https://app.diagrams.net), then export as `llm-backends.drawio.svg`.
 
-Each target repo chooses its LLM backend via `.codex/config.yml`. The
+Each target repo chooses its LLM backend via `.devless/config.yml`. The
 orchestrator supports three providers. Only one needs to be configured.
 
 ---
@@ -147,7 +146,7 @@ Authenticates via the ECS task IAM role — no API keys or SSM parameters needed
 The IAM module already includes `bedrock:InvokeModel` permission on the task
 role. To verify or customize, see `terraform/modules/iam/main.tf`.
 
-`.codex/config.yml`:
+`.devless/config.yml`:
 
 ```yaml
 model: bedrock/anthropic.claude-sonnet-4-20250514-v1:0
@@ -163,7 +162,7 @@ Requires a single SSM parameter for the API key.
 
 ```bash
 aws ssm put-parameter \
-  --name "/codex-dev-team/openai-api-key" \
+  --name "/devless/openai-api-key" \
   --type SecureString \
   --value "sk-..." \
   --region eu-central-1
@@ -172,7 +171,7 @@ aws ssm put-parameter \
 Alternatively, set `TF_VAR_openai_api_key` as a GitHub Actions secret or
 environment variable and let Terraform manage the parameter.
 
-`.codex/config.yml`:
+`.devless/config.yml`:
 
 ```yaml
 model: o3
@@ -186,19 +185,19 @@ Requires three SSM parameters.
 
 ```bash
 aws ssm put-parameter \
-  --name "/codex-dev-team/azure-api-key" \
+  --name "/devless/azure-api-key" \
   --type SecureString \
   --value "your-azure-api-key" \
   --region eu-central-1
 
 aws ssm put-parameter \
-  --name "/codex-dev-team/azure-api-base" \
+  --name "/devless/azure-api-base" \
   --type String \
   --value "https://your-resource.openai.azure.com" \
   --region eu-central-1
 
 aws ssm put-parameter \
-  --name "/codex-dev-team/azure-api-version" \
+  --name "/devless/azure-api-version" \
   --type String \
   --value "2024-06-01" \
   --region eu-central-1
@@ -208,7 +207,7 @@ Then add the corresponding environment variables (`AZURE_API_KEY`,
 `AZURE_API_BASE`, `AZURE_API_VERSION`) to the ECS task definition in
 `terraform/modules/ecs/main.tf`.
 
-`.codex/config.yml`:
+`.devless/config.yml`:
 
 ```yaml
 model: azure/gpt-4o
@@ -222,12 +221,12 @@ See [`examples/`](examples/) for ready-to-copy config files for each backend.
 
 ## Bootstrapping a target repository
 
-Once the infrastructure is deployed, each repo you want Codex to work on
+Once the infrastructure is deployed, each repo you want Devless to work on
 needs a one-time webhook registration and a CI workflow.
 
 ### Required: CI workflow
 
-`.github/workflows/ci.yml` — must run on pull requests so Codex can detect
+`.github/workflows/ci.yml` — must run on pull requests so Devless can detect
 failures and auto-fix them. The actual steps depend on your language/stack:
 
 ```yaml
@@ -250,10 +249,10 @@ jobs:
 
 ### One-time: webhook registration
 
-`.github/workflows/codex-setup.yml` — run once via Actions → Run workflow:
+`.github/workflows/devless-setup.yml` — run once via Actions → Run workflow:
 
 ```yaml
-name: Codex Dev Team Setup
+name: Devless Setup
 on:
   workflow_dispatch:
 permissions:
@@ -263,26 +262,25 @@ jobs:
   setup:
     runs-on: ubuntu-latest
     steps:
-      - uses: typekpb/codex-infra/.github/actions/codex-dev-team@main
+      - uses: typekpb/devless/.github/actions/devless@main
         with:
           aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
-          api_gateway_url: ${{ secrets.CODEX_API_URL }}
-          webhook_secret_param_name: /codex-dev-team/webhook-secret
+          api_gateway_url: ${{ secrets.DEVLESS_API_URL }}
+          webhook_secret_param_name: /devless/webhook-secret
 ```
 
-Add `AWS_ROLE_ARN` and `CODEX_API_URL` (the `api_gateway_url` terraform output)
+Add `AWS_ROLE_ARN` and `DEVLESS_API_URL` (the `api_gateway_url` terraform output)
 as secrets in the target repo, then run the workflow.
 
 ### Optional: project config
 
-`.codex/config.yml` — customize how Codex processes your repo:
+`.devless/config.yml` — customize how Devless processes your repo:
 
 ```yaml
 # Amazon Bedrock backend (default — uses ECS task role, no API key needed)
 model: bedrock/anthropic.claude-sonnet-4-20250514-v1:0
 test_command: npm test   # command Aider runs to verify changes (default: pytest)
 max_iterations: 10       # max Aider retry loops (default: 10)
-skills_repo: https://github.com/typekpb/project-skills.git  # optional
 ```
 
 ```yaml
@@ -290,7 +288,6 @@ skills_repo: https://github.com/typekpb/project-skills.git  # optional
 model: o3                # or: gpt-4o, o1, gpt-4-turbo
 test_command: npm test
 max_iterations: 10
-skills_repo: https://github.com/typekpb/project-skills.git  # optional
 ```
 
 ```yaml
@@ -298,7 +295,6 @@ skills_repo: https://github.com/typekpb/project-skills.git  # optional
 model: azure/gpt-4o     # must match your Azure deployment name
 test_command: npm test
 max_iterations: 10
-skills_repo: ""
 ```
 
 See [`examples/`](examples/) for ready-to-copy config files.
@@ -339,15 +335,15 @@ Any language, any framework — just needs a CI workflow and optionally a config
 
 ```
 your-project/
-├── .codex/config.yml           # Optional: test_command, skills_repo, max_iterations
-├── .agents/skills/             # Optional: repo-specific Codex skills
+├── .devless/config.yml           # Optional: model, test_command, max_iterations
+├── .agents/skills/             # Optional: repo-specific Devless skills
 ├── .github/workflows/
 │   ├── ci.yml                  # Required: runs your tests on PRs
-│   └── codex-setup.yml         # One-time: registers the webhook
+│   └── devless-setup.yml         # One-time: registers the webhook
 └── ...                         # Your code (any language/structure)
 ```
 
-Then open an issue — Codex picks it up, posts status comments, opens a PR,
+Then open an issue — Devless picks it up, posts status comments, opens a PR,
 auto-fixes CI failures, and auto-merges after approval.
 
 ---
@@ -357,5 +353,90 @@ auto-fixes CI failures, and auto-merges after approval.
 - AWS account with CLI configured
 - Terraform >= 1.10
 - Docker
-- GitHub App (with permissions: issues, pull requests, contents, checks)
+- GitHub App (see setup below)
 - OpenAI API key (only if using OpenAI backend instead of Bedrock)
+
+---
+
+## Creating the GitHub App
+
+The orchestrator authenticates as a GitHub App to clone repos, open PRs, and
+post comments. Apps use short-lived installation tokens — no PATs to rotate.
+
+GitHub Apps can only be created via the web UI (there is no CLI command).
+
+### Step 1: Create the app
+
+1. Go to **Settings → Developer settings → GitHub Apps → New GitHub App**
+   - Org-level: `https://github.com/organizations/typekpb/settings/apps/new`
+   - Personal: `https://github.com/settings/apps/new`
+
+2. Fill in:
+   - **App name**: `Devless` (or any name you like)
+   - **Homepage URL**: your repo URL (e.g. `https://github.com/typekpb/devless`)
+   - **Webhook**: uncheck "Active" (the orchestrator doesn't receive webhooks via the app — it uses API Gateway)
+
+3. Set **Repository permissions**:
+
+   | Permission | Access |
+   |---|---|
+   | Contents | Read & write |
+   | Issues | Read & write |
+   | Pull requests | Read & write |
+   | Checks | Read-only |
+   | Metadata | Read-only (auto-granted) |
+
+   No organization or account permissions are needed.
+
+4. Under **Where can this GitHub App be installed?**, select "Only on this account".
+
+5. Click **Create GitHub App**.
+
+### Step 2: Generate a private key
+
+1. On the app's settings page, scroll to **Private keys**
+2. Click **Generate a private key**
+3. A `.pem` file downloads — save it as `terraform/github-app-private-key.pem`
+
+### Step 3: Note the App ID
+
+The **App ID** is shown at the top of the app's settings page (a numeric value
+like `123456`). You'll need this for `github_app_id` in Terraform.
+
+### Step 4: Install the app
+
+1. On the app's settings page, click **Install App** in the left sidebar
+2. Choose your organization or account
+3. Select **Only select repositories** and pick the repos Devless should work on
+   (you can add more later)
+4. Click **Install**
+
+### Step 5: Get the Installation ID
+
+After installing, the URL will look like:
+
+```
+https://github.com/organizations/typekpb/settings/installations/12345678
+```
+
+The number at the end (`12345678`) is your **Installation ID**. You'll need
+this for `github_app_installation_id` in Terraform.
+
+Alternatively, retrieve it via the API using the `gh` CLI:
+
+```bash
+APP_ID=123456  # your App ID from Step 3
+
+# List installations (requires the app's JWT — easier to just grab from the URL above)
+gh api "/app/installations" \
+  --header "Authorization: Bearer $(gh auth token)" \
+  | jq '.[].id'
+```
+
+### Summary of values
+
+| Value | Where to find it | Terraform variable |
+|---|---|---|
+| App ID | App settings page, top | `github_app_id` |
+| Private key | Downloaded `.pem` file | `TF_VAR_github_app_private_key` (env var) |
+| Installation ID | URL after installing the app | `github_app_installation_id` |

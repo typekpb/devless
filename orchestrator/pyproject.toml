@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "codex-infra"
+name = "devless"
 version = "0.1.0"
-description = "Codex Dev Team Orchestrator"
+description = "Devless Orchestrator"
 requires-python = ">=3.12"
 dependencies = [
     "aider-chat>=0.40.0",

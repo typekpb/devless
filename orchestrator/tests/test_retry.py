@@ -1,6 +1,6 @@
 """Property-based tests for exponential backoff retry sequence.
 
-# Feature: codex-dev-team, Property 15: Exponential backoff retry sequence
+# Feature: devless, Property 15: Exponential backoff retry sequence
 """
 import sys
 import os
@@ -42,7 +42,7 @@ def test_exponential_backoff_retry_sequence(num_failures):
 
     Validates: Requirements 11.5
     """
-    # Feature: codex-dev-team, Property 15: Exponential backoff retry sequence
+    # Feature: devless, Property 15: Exponential backoff retry sequence
 
     max_attempts = 3
     call_count = 0

@@ -81,16 +81,15 @@ class _AiderResult:
 @patch("pipeline.stages.push_branch")
 @patch("pipeline.stages.run_aider")
 @patch("pipeline.stages.build_issue_message", return_value="issue text")
-@patch("pipeline.stages.load_codex_config")
+@patch("pipeline.stages.load_devless_config")
 @patch("pipeline.stages.clone_repo", return_value="/tmp/repo")
 @patch("pipeline.stages.create_branch", return_value="issue-42")
-@patch("pipeline.stages.install_skills")
 def test_full_run_transitions_pending_to_complete(
-    mock_skills, mock_branch, mock_clone, mock_codex_cfg, mock_build_msg,
+    mock_branch, mock_clone, mock_devless_cfg, mock_build_msg,
     mock_aider, mock_push, mock_pr, mock_write_cp,
 ):
     """Pipeline starting from pending should transition through all states to complete."""
-    mock_codex_cfg.return_value = MagicMock(skills_repo="", test_command="pytest", max_iterations=1)
+    mock_devless_cfg.return_value = MagicMock(test_command="pytest", max_iterations=1)
     mock_aider.return_value = _AiderResult()
 
     pipeline = TaskPipeline(
@@ -118,16 +117,15 @@ def test_full_run_transitions_pending_to_complete(
 @patch("pipeline.stages.push_branch")
 @patch("pipeline.stages.run_aider")
 @patch("pipeline.stages.build_issue_message", return_value="issue text")
-@patch("pipeline.stages.load_codex_config")
+@patch("pipeline.stages.load_devless_config")
 @patch("pipeline.stages.clone_repo", return_value="/tmp/repo")
 @patch("pipeline.stages.create_branch", return_value="issue-42")
-@patch("pipeline.stages.install_skills")
 def test_resume_from_agent_loop_skips_clone(
-    mock_skills, mock_branch, mock_clone, mock_codex_cfg, mock_build_msg,
+    mock_branch, mock_clone, mock_devless_cfg, mock_build_msg,
     mock_aider, mock_push, mock_pr, mock_write_cp,
 ):
     """Resuming from agent_loop should skip clone and agent stages."""
-    mock_codex_cfg.return_value = MagicMock(skills_repo="", test_command="pytest", max_iterations=1)
+    mock_devless_cfg.return_value = MagicMock(test_command="pytest", max_iterations=1)
 
     pipeline = TaskPipeline(
         payload=_make_payload(),
@@ -158,16 +156,15 @@ def test_resume_from_agent_loop_skips_clone(
 @patch("pipeline.stages.write_checkpoint")
 @patch("pipeline.stages.run_aider")
 @patch("pipeline.stages.build_issue_message", return_value="issue text")
-@patch("pipeline.stages.load_codex_config")
+@patch("pipeline.stages.load_devless_config")
 @patch("pipeline.stages.clone_repo", return_value="/tmp/repo")
 @patch("pipeline.stages.create_branch", return_value="issue-42")
-@patch("pipeline.stages.install_skills")
 def test_clarification_needed_halts_pipeline(
-    mock_skills, mock_branch, mock_clone, mock_codex_cfg, mock_build_msg,
+    mock_branch, mock_clone, mock_devless_cfg, mock_build_msg,
     mock_aider, mock_write_cp,
 ):
     """When Aider needs clarification, pipeline raises ClarificationNeeded."""
-    mock_codex_cfg.return_value = MagicMock(skills_repo="", test_command="pytest", max_iterations=1)
+    mock_devless_cfg.return_value = MagicMock(test_command="pytest", max_iterations=1)
     mock_aider.return_value = _AiderResult(
         success=False, needs_clarification=True, clarification_question="What color?",
     )
@@ -194,9 +191,8 @@ def test_clarification_needed_halts_pipeline(
 @patch("pipeline.stages.write_checkpoint")
 @patch("pipeline.stages.clone_repo", side_effect=Exception("network error"))
 @patch("pipeline.stages.create_branch")
-@patch("pipeline.stages.install_skills")
 def test_clone_failure_posts_error_and_raises(
-    mock_skills, mock_branch, mock_clone, mock_write_cp,
+    mock_branch, mock_clone, mock_write_cp,
 ):
     """Clone failure should post an error comment and raise RuntimeError."""
     pipeline = TaskPipeline(
@@ -218,16 +214,15 @@ def test_clone_failure_posts_error_and_raises(
 @patch("pipeline.stages.write_checkpoint")
 @patch("pipeline.stages.run_aider")
 @patch("pipeline.stages.build_issue_message", return_value="issue text")
-@patch("pipeline.stages.load_codex_config")
+@patch("pipeline.stages.load_devless_config")
 @patch("pipeline.stages.clone_repo", return_value="/tmp/repo")
 @patch("pipeline.stages.create_branch", return_value="issue-42")
-@patch("pipeline.stages.install_skills")
 def test_aider_failure_posts_error_and_raises(
-    mock_skills, mock_branch, mock_clone, mock_codex_cfg, mock_build_msg,
+    mock_branch, mock_clone, mock_devless_cfg, mock_build_msg,
     mock_aider, mock_write_cp,
 ):
     """Aider failure should post error comment and raise RuntimeError."""
-    mock_codex_cfg.return_value = MagicMock(skills_repo="", test_command="pytest", max_iterations=1)
+    mock_devless_cfg.return_value = MagicMock(test_command="pytest", max_iterations=1)
     mock_aider.return_value = _AiderResult(success=False, output="something went wrong")
 
     pipeline = TaskPipeline(

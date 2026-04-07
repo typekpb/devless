@@ -13,8 +13,7 @@ from github_app import GitHubAppAuth
 from github_client import IssueNotifier, build_issue_message
 from models import CheckpointState, TaskPayload
 from pr_manager import create_or_update_pr
-from repo_manager import clone_repo, create_branch, load_codex_config, push_branch
-from skills_loader import install_skills
+from repo_manager import clone_repo, create_branch, load_devless_config, push_branch
 
 
 class ClarificationNeeded(Exception):
@@ -80,7 +79,7 @@ class TaskPipeline:
 
     def _fail(self, message: str) -> None:
         log.error(message)
-        self.notify.comment(f"⚠️ Codex Dev Team encountered an error:\n\n```\n{message}\n```")
+        self.notify.comment(f"⚠️ Devless encountered an error:\n\n```\n{message}\n```")
         raise RuntimeError(message)
 
     def run_to_completion(self) -> None:
@@ -110,20 +109,19 @@ class TaskPipeline:
     def on_enter_agent_loop(self) -> None:
         log.info("Starting Aider agentic loop")
         self.notify.comment(
-            "🔧 Codex Dev Team is now analyzing the issue and generating code changes. "
+            "🔧 Devless is now analyzing the issue and generating code changes. "
             "This may take a few minutes."
         )
-        codex_cfg = load_codex_config(self.repo_path)
-        _install_skills(self.repo_path, codex_cfg.skills_repo)
+        devless_cfg = load_devless_config(self.repo_path)
         issue_message = build_issue_message(self.payload, self.app_auth.token())
 
         try:
             result = run_aider(
                 workspace=self.repo_path,
                 issue_message=issue_message,
-                test_cmd=codex_cfg.test_command,
-                max_iterations=codex_cfg.max_iterations,
-                model=codex_cfg.model,
+                test_cmd=devless_cfg.test_command,
+                max_iterations=devless_cfg.max_iterations,
+                model=devless_cfg.model,
             )
         except Exception as exc:
             self._fail(f"Aider runner raised an unexpected exception: {exc}")
@@ -137,9 +135,9 @@ class TaskPipeline:
             question = result.clarification_question or "Please provide more details."
             log.info("Aider needs clarification", question=question)
             self.notify.comment(
-                f"🤔 Codex needs clarification before proceeding:\n\n{question}\n\n"
+                f"🤔 Devless needs clarification before proceeding:\n\n{question}\n\n"
                 f"Please reply to this issue with the requested information. "
-                f"Codex will resume automatically once your response is received."
+                f"Devless will resume automatically once your response is received."
             )
             raise ClarificationNeeded()
 
@@ -174,23 +172,8 @@ class TaskPipeline:
 
     def on_enter_complete(self) -> None:
         self.notify.comment(
-            f"✅ Codex Dev Team has implemented the requested changes.\n\n"
+            f"✅ Devless has implemented the requested changes.\n\n"
             f"A Pull Request has been opened: {self.pr_url}\n\n"
             f"Please review and merge when ready."
         )
         self._save()
-
-
-# ---------------------------------------------------------------------------
-# Module-level helper
-# ---------------------------------------------------------------------------
-
-def _install_skills(repo_path: str, project_skills_repo_url: str) -> None:
-    common = os.environ.get("COMMON_SKILLS_REPO_URL", "")
-    if not common and not project_skills_repo_url:
-        return
-    log.info("Installing skills", common=common or "(none)", project=project_skills_repo_url or "(none)")
-    try:
-        install_skills(repo_path, common_skills_repo_url=common or None, project_skills_repo_url=project_skills_repo_url or None)
-    except Exception as exc:
-        log.warning("Failed to install skills, continuing without them", error=str(exc))

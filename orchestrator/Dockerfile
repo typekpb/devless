@@ -8,6 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY pyproject.toml .
 COPY src/ ./src/
+COPY .agents/ ./.agents/
 COPY tests/ ./tests/
 
 RUN pip install ".[test]" \
@@ -24,6 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY pyproject.toml .
 COPY src/ ./src/
+COPY .agents/ ./.agents/
 
 RUN pip install .
 

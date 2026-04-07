@@ -1,6 +1,6 @@
 """Property-based tests for structured JSON log output.
 
-# Feature: codex-dev-team, Property 14: Log output is valid JSON
+# Feature: devless, Property 14: Log output is valid JSON
 """
 import io
 import json
@@ -40,7 +40,7 @@ def test_log_output_is_valid_json(log_fn, message, extra):
 
     **Validates: Requirements 6.7**
     """
-    # Feature: codex-dev-team, Property 14: Log output is valid JSON
+    # Feature: devless, Property 14: Log output is valid JSON
     captured = io.StringIO()
     original_stdout = sys.stdout
     sys.stdout = captured

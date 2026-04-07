@@ -25,12 +25,6 @@ variable "webhook_secret" {
   sensitive = true
 }
 
-variable "common_skills_repo_url" {
-  description = "Git URL of the shared/common skills repository"
-  type        = string
-  default     = ""
-}
-
 # --- SSM Parameters ---
 
 resource "aws_ssm_parameter" "github_app_id" {
@@ -63,14 +57,6 @@ resource "aws_ssm_parameter" "webhook_secret" {
   value = var.webhook_secret
 }
 
-resource "aws_ssm_parameter" "common_skills_repo_url" {
-  name  = "/${var.project_name}/common-skills-repo-url"
-  type  = "String"
-  value = var.common_skills_repo_url
-}
-
-# --- Outputs ---
-
 output "param_arns" {
   description = "ARNs of all SSM parameters (for IAM policies)"
   value = [
@@ -79,7 +65,6 @@ output "param_arns" {
     aws_ssm_parameter.github_app_installation_id.arn,
     aws_ssm_parameter.openai_api_key.arn,
     aws_ssm_parameter.webhook_secret.arn,
-    aws_ssm_parameter.common_skills_repo_url.arn,
   ]
 }
 
@@ -105,8 +90,4 @@ output "webhook_secret_param_name" {
 
 output "webhook_secret_param_arn" {
   value = aws_ssm_parameter.webhook_secret.arn
-}
-
-output "common_skills_repo_param_arn" {
-  value = aws_ssm_parameter.common_skills_repo_url.arn
 }

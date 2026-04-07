@@ -1,6 +1,6 @@
 """Property-based tests for branch naming convention.
 
-# Feature: codex-dev-team, Property 9: Branch naming convention
+# Feature: devless, Property 9: Branch naming convention
 """
 import sys
 import os
@@ -21,7 +21,7 @@ def test_branch_naming_convention(issue_number: int):
     For any positive issue number, create_branch should return a branch
     name matching `issue-{number}` exactly.
 
-    # Feature: codex-dev-team, Property 9: Branch naming convention
+    # Feature: devless, Property 9: Branch naming convention
     Validates: Requirements 3.1
     """
     mock_repo = MagicMock()
@@ -42,7 +42,7 @@ from repo_manager import format_commit_message
 def test_commit_message_contains_issue_reference(issue_number: int, issue_title: str):
     """Property 10: Commit message contains issue reference
 
-    # Feature: codex-dev-team, Property 10: Commit message contains issue reference
+    # Feature: devless, Property 10: Commit message contains issue reference
     Validates: Requirements 3.2
     """
     message = format_commit_message(issue_number, issue_title)

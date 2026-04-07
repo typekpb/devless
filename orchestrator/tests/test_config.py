@@ -1,6 +1,6 @@
 """Property-based tests for configuration validation.
 
-# Feature: codex-dev-team, Property 13: Configuration requires all env vars
+# Feature: devless, Property 13: Configuration requires all env vars
 """
 import sys
 import os
@@ -29,7 +29,7 @@ def test_missing_env_vars_raise_validation_error(present):
     For any subset of required env vars that is missing at least one,
     load_config() should raise ValidationError.
 
-    # Feature: codex-dev-team, Property 13: Configuration requires all env vars
+    # Feature: devless, Property 13: Configuration requires all env vars
     Validates: Requirements 6.3
     """
     env = {var: "dummy-value" for var in present}
@@ -60,7 +60,7 @@ def test_all_env_vars_present_succeeds(values):
     """Property 13 (complement): When all required env vars are present,
     load_config() should succeed and return all values.
 
-    # Feature: codex-dev-team, Property 13: Configuration requires all env vars
+    # Feature: devless, Property 13: Configuration requires all env vars
     Validates: Requirements 6.3
     """
     with patch.dict(os.environ, values):

@@ -30,8 +30,8 @@
           <mxGeometry x="120" y="250" width="140" height="100" as="geometry"/>
         </mxCell>
 
-        <!-- .codex/config.yml -->
-        <mxCell id="config" value=".codex/config.yml&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;model: bedrock/... | o3 | azure/...&lt;/font&gt;" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#FFF9C4;strokeColor=#F9A825;fontSize=11;fontStyle=0;fontColor=#333;" vertex="1" parent="1">
+        <!-- .devless/config.yml -->
+        <mxCell id="config" value=".devless/config.yml&lt;br&gt;&lt;font style=&quot;font-size:10px&quot;&gt;model: bedrock/... | o3 | azure/...&lt;/font&gt;" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#FFF9C4;strokeColor=#F9A825;fontSize=11;fontStyle=0;fontColor=#333;" vertex="1" parent="1">
           <mxGeometry x="80" y="390" width="220" height="60" as="geometry"/>
         </mxCell>
 
@@ -55,7 +55,7 @@
         <mxCell id="openai_icon" value="OpenAI API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#424242;fontColor=#fff;strokeColor=none;fontSize=12;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="500" y="210" width="120" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="openai_auth" value="Auth: OPENAI_API_KEY&lt;br&gt;SSM: /codex-dev-team/openai-api-key" style="text;html=1;fontSize=10;fontColor=#1565C0;align=left;verticalAlign=top;" vertex="1" parent="1">
+        <mxCell id="openai_auth" value="Auth: OPENAI_API_KEY&lt;br&gt;SSM: /devless/openai-api-key" style="text;html=1;fontSize=10;fontColor=#1565C0;align=left;verticalAlign=top;" vertex="1" parent="1">
           <mxGeometry x="455" y="265" width="220" height="40" as="geometry"/>
         </mxCell>
 
@@ -66,7 +66,7 @@
         <mxCell id="azure_icon" value="Azure OpenAI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#0078D4;fontColor=#fff;strokeColor=none;fontSize=12;fontStyle=1;" vertex="1" parent="1">
           <mxGeometry x="500" y="370" width="120" height="40" as="geometry"/>
         </mxCell>
-        <mxCell id="azure_auth" value="Auth: AZURE_API_KEY&lt;br&gt;SSM: /codex-dev-team/azure-api-key&lt;br&gt;SSM: /codex-dev-team/azure-api-base&lt;br&gt;SSM: /codex-dev-team/azure-api-version" style="text;html=1;fontSize=10;fontColor=#283593;align=left;verticalAlign=top;" vertex="1" parent="1">
+        <mxCell id="azure_auth" value="Auth: AZURE_API_KEY&lt;br&gt;SSM: /devless/azure-api-key&lt;br&gt;SSM: /devless/azure-api-base&lt;br&gt;SSM: /devless/azure-api-version" style="text;html=1;fontSize=10;fontColor=#283593;align=left;verticalAlign=top;" vertex="1" parent="1">
           <mxGeometry x="455" y="420" width="220" height="60" as="geometry"/>
         </mxCell>
 

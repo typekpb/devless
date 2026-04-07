@@ -1,7 +1,7 @@
 variable "project_name" {
   description = "Short name used to prefix all resources"
   type        = string
-  default     = "codex-dev-team"
+  default     = "devless"
 }
 
 variable "github_app_id" {
@@ -41,10 +41,4 @@ variable "ecr_image_tag" {
 variable "github_actions_org" {
   description = "GitHub organization for OIDC federation (e.g. typekpb)"
   type        = string
-}
-
-variable "common_skills_repo_url" {
-  description = "Git URL of the shared/common skills repository (e.g. https://github.com/org/codex-skills.git)"
-  type        = string
-  default     = ""
 }

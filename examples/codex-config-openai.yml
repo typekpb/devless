@@ -1,4 +1,4 @@
-# .codex/config.yml — OpenAI backend
+# .devless/config.yml — OpenAI backend
 #
 # Uses OpenAI API directly. Requires OPENAI_API_KEY to be set
 # on the orchestrator (configured via Terraform/SSM).
@@ -6,4 +6,3 @@
 model: o3                  # or: gpt-4o, o1, gpt-4-turbo
 test_command: pytest       # command Aider runs to verify changes
 max_iterations: 10         # max Aider retry loops
-skills_repo: ""            # optional: https://github.com/typekpb/project-skills.git

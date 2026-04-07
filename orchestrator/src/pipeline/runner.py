@@ -12,7 +12,7 @@ from github_app import GitHubAppAuth
 from github_client import IssueNotifier
 from models import CheckpointState
 from pipeline.stages import TaskPipeline
-from repo_manager import clone_repo, load_codex_config, push_branch
+from repo_manager import clone_repo, load_devless_config, push_branch
 from sqs_consumer import SQSMessage, delete_message
 
 
@@ -74,7 +74,7 @@ def _process_issue(
             import git as _git
             _git.Repo(pipeline.repo_path).git.checkout(checkpoint.branch_name)
 
-        pipeline.notify.comment("🚀 Codex Dev Team has picked up this issue and is starting work.")
+        pipeline.notify.comment("🚀 Devless has picked up this issue and is starting work.")
         pipeline.run_to_completion()
 
     try:
@@ -92,7 +92,7 @@ def _process_ci_fix(
     app_auth: GitHubAppAuth,
     openai_api_key: str,
 ) -> None:
-    """Fix a CI failure on an existing Codex branch."""
+    """Fix a CI failure on an existing Devless branch."""
     payload = msg.payload
     queue_url = cfg["SQS_QUEUE_URL"]
     branch = payload.branch or f"issue-{payload.issue_number}"
@@ -104,7 +104,7 @@ def _process_ci_fix(
     token = app_auth.token()
     notify = IssueNotifier(payload, token)
     notify.comment(
-        f"🔄 CI failed on `{branch}`. Codex Dev Team is analyzing the failure and pushing a fix."
+        f"🔄 CI failed on `{branch}`. Devless is analyzing the failure and pushing a fix."
     )
 
     with tempfile.TemporaryDirectory() as workspace:
@@ -116,22 +116,22 @@ def _process_ci_fix(
             notify.comment(f"⚠️ Failed to checkout branch `{branch}`: {exc}")
             raise
 
-        codex_cfg = load_codex_config(repo_path)
+        devless_cfg = load_devless_config(repo_path)
 
         fix_message = (
             f"The CI pipeline failed on branch `{branch}`.\n\n"
             f"{payload.issue_body}\n\n"
             f"Please analyze the failure, fix the code, and make sure "
-            f"the test command `{codex_cfg.test_command}` passes."
+            f"the test command `{devless_cfg.test_command}` passes."
         )
 
         try:
             result = run_aider(
                 workspace=repo_path,
                 issue_message=fix_message,
-                test_cmd=codex_cfg.test_command,
-                max_iterations=codex_cfg.max_iterations,
-                model=codex_cfg.model,
+                test_cmd=devless_cfg.test_command,
+                max_iterations=devless_cfg.max_iterations,
+                model=devless_cfg.model,
             )
         except Exception as exc:
             notify.comment(f"⚠️ Aider failed to fix CI: {exc}")
@@ -141,7 +141,7 @@ def _process_ci_fix(
             try:
                 push_branch(repo_path, branch, app_auth.token())
                 notify.comment(
-                    f"🔧 Codex Dev Team has pushed a fix to `{branch}`. "
+                    f"🔧 Devless has pushed a fix to `{branch}`. "
                     f"CI should re-run automatically."
                 )
             except Exception as exc:
@@ -150,7 +150,7 @@ def _process_ci_fix(
         else:
             output = result.output[-2000:] if result else "no output"
             notify.comment(
-                f"⚠️ Codex Dev Team could not fix the CI failure automatically.\n\n"
+                f"⚠️ Devless could not fix the CI failure automatically.\n\n"
                 f"```\n{output}\n```"
             )
 

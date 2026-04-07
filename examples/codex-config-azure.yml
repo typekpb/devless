@@ -1,4 +1,4 @@
-# .codex/config.yml — Azure OpenAI backend
+# .devless/config.yml — Azure OpenAI backend
 #
 # Uses Azure-hosted OpenAI models. Requires the following env vars
 # on the orchestrator (configured via Terraform/SSM):
@@ -11,4 +11,3 @@
 model: azure/gpt-4o       # must match your Azure deployment name
 test_command: pytest
 max_iterations: 10
-skills_repo: ""            # optional: https://github.com/typekpb/project-skills.git

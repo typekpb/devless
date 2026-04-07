@@ -9,30 +9,28 @@ import yaml
 
 
 @dataclass
-class CodexProjectConfig:
-    """Per-project configuration read from ``.codex/config.yml``."""
+class DevlessProjectConfig:
+    """Per-project configuration read from ``.devless/config.yml``."""
 
-    skills_repo: str
     skills_path: str
     max_iterations: int
     test_command: str
     model: str
 
 
-def load_codex_config(repo_path: str) -> CodexProjectConfig:
-    """Read ``.codex/config.yml`` from a cloned repo.
+def load_devless_config(repo_path: str) -> DevlessProjectConfig:
+    """Read ``.devless/config.yml`` from a cloned repo.
 
     Falls back to environment variables and sensible defaults when the
     file is absent or individual keys are missing.
     """
-    config_path = os.path.join(repo_path, ".codex", "config.yml")
+    config_path = os.path.join(repo_path, ".devless", "config.yml")
     raw: dict = {}
     if os.path.isfile(config_path):
         with open(config_path, "r", encoding="utf-8") as fh:
             raw = yaml.safe_load(fh) or {}
 
-    return CodexProjectConfig(
-        skills_repo=str(raw.get("skills_repo", os.environ.get("SKILLS_REPO_URL", ""))),
+    return DevlessProjectConfig(
         skills_path=str(raw.get("skills_path", "")),
         max_iterations=int(raw.get("max_iterations", os.environ.get("MAX_ITERATIONS", 10))),
         test_command=str(raw.get("test_command", os.environ.get("TEST_COMMAND", "pytest"))),

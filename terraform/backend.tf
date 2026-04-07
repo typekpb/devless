@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
-    bucket       = "codex-dev-team-tf-state"
-    key          = "codex-dev-team/terraform.tfstate"
+    bucket       = "devless-tf-state"
+    key          = "devless/terraform.tfstate"
     region       = "eu-central-1"
     use_lockfile = true
     encrypt      = true

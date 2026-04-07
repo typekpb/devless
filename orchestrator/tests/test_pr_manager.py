@@ -1,6 +1,6 @@
 """Property-based tests for pr_manager: PR description, commit message, idempotence.
 
-# Feature: codex-dev-team, Properties 11, 12
+# Feature: devless, Properties 11, 12
 """
 import sys
 import os
