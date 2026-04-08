@@ -16,9 +16,53 @@ Events handled:
 
 ## How it works end-to-end
 
-![End-to-End Flow](docs/end-to-end-flow.drawio.svg)
+```mermaid
+sequenceDiagram
+    actor Dev
+    participant GH as GitHub
+    box AWS
+        participant WH as Webhook Handler
+        participant SQS
+        participant Orch as Orchestrator
+        participant Aider
+    end
 
-> To edit: open [`docs/end-to-end-flow.drawio`](docs/end-to-end-flow.drawio) in [draw.io](https://app.diagrams.net), then export as `end-to-end-flow.drawio.svg`.
+    alt new issue
+        Dev->>GH: open issue
+    else comment on issue
+        Dev->>GH: comment on issue
+    end
+
+    GH->>WH: webhook event
+    activate WH
+    WH->>WH: validate HMAC
+    WH->>SQS: enqueue task
+    deactivate WH
+
+    SQS->>Orch: deliver message
+    activate Orch
+    Orch->>GH: clone repo
+    Orch->>Aider: generate code
+    activate Aider
+    Aider-->>Orch: result
+    deactivate Aider
+    Orch->>GH: open PR
+    deactivate Orch
+
+    loop CI fails
+        GH->>Orch: check_run failure
+        activate Orch
+        Orch->>Aider: fix code
+        activate Aider
+        Aider-->>Orch: result
+        deactivate Aider
+        Orch->>GH: push fix
+        deactivate Orch
+    end
+
+    Dev->>GH: review & approve
+    GH->>GH: auto-merge
+```
 
 ---
 
@@ -136,9 +180,33 @@ Repeat steps 3–5 for every change.
 
 ## LLM backend configuration
 
-![LLM Backends](docs/llm-backends.drawio.svg)
+```mermaid
+graph LR
+    subgraph Orchestrator
+        Pipeline[Pipeline Runner] --> Core[Aider Core]
+        Core --> Router{Model Router}
+        Config[".devless/config.yml"] -.->|model| Router
+    end
 
-> To edit: open [`docs/llm-backends.drawio`](docs/llm-backends.drawio) in [draw.io](https://app.diagrams.net), then export as `llm-backends.drawio.svg`.
+    subgraph Bedrock["Amazon Bedrock (default)"]
+        BR[Claude Sonnet / etc.]
+        BR_auth["Auth: IAM task role\nSSM: none"]
+    end
+
+    subgraph OpenAI
+        OAI[GPT-4o / o3 / etc.]
+        OAI_auth["Auth: OPENAI_API_KEY\nSSM: /devless/openai-api-key"]
+    end
+
+    subgraph Azure["Azure OpenAI"]
+        AZ[GPT-4o / etc.]
+        AZ_auth["Auth: AZURE_API_KEY\nSSM: /devless/azure-api-*"]
+    end
+
+    Router -->|"bedrock/*"| BR
+    Router -->|"o3, gpt-4o, ..."| OAI
+    Router -->|"azure/*"| AZ
+```
 
 Each target repo chooses its LLM backend via `.devless/config.yml`. The
 orchestrator supports three providers. Only one needs to be configured.
