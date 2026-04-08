@@ -16,13 +16,9 @@ Events handled:
 
 ## How it works end-to-end
 
-1. You open a GitHub issue describing a feature or bug fix
-2. Webhook fires → Lambda validates HMAC → SQS message queued
-3. ECS auto-scales from 0 → orchestrator picks up the message
-4. Orchestrator clones repo, installs skills, runs Aider, opens PR
-5. CI runs on the PR — if it fails, orchestrator auto-fixes and pushes
-6. You review the PR — once approved + CI green, it auto-merges
-7. ECS scales back to 0 when the queue is empty
+![End-to-End Flow](docs/end-to-end-flow.drawio.svg)
+
+> To edit: open [`docs/end-to-end-flow.drawio`](docs/end-to-end-flow.drawio) in [draw.io](https://app.diagrams.net), then export as `end-to-end-flow.drawio.svg`.
 
 ---
 

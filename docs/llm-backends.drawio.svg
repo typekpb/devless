@@ -3,6 +3,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
      version="1.1" width="720" height="540" viewBox="-5 -5 720 540"
      content="see docs/llm-backends.drawio for editable source">
+  <rect x="-5" y="-5" width="720" height="540" fill="#fff"/>
   <defs>
     <style type="text/css">
       .bg { rx:8; ry:8; }
