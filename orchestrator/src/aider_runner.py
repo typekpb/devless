@@ -117,11 +117,32 @@ def run_aider(
     """
     captured = io.StringIO()
 
+    class TeeWriter:
+        """Writes to both the capture buffer and logs lines to structured logger."""
+        def __init__(self, buf):
+            self._buf = buf
+            self._line = []
+
+        def write(self, s):
+            self._buf.write(s)
+            self._line.append(s)
+            if "\n" in s:
+                import logger as _log
+                text = "".join(self._line).rstrip()
+                if text:
+                    _log.info("aider", output=text[:500])
+                self._line = []
+
+        def flush(self):
+            self._buf.flush()
+
+    tee = TeeWriter(captured)
+
     # Redirect stdout and stderr to capture Aider output
     old_stdout = sys.stdout
     old_stderr = sys.stderr
-    sys.stdout = captured
-    sys.stderr = captured
+    sys.stdout = tee
+    sys.stderr = tee
 
     original_dir = os.getcwd()
     success = False

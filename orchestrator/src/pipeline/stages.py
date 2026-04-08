@@ -109,6 +109,7 @@ class TaskPipeline:
     def on_enter_agent_loop(self) -> None:
         log.info("Starting Aider agentic loop")
         devless_cfg = load_devless_config(self.repo_path)
+        log.info("Using model", model=devless_cfg.model)
         issue_message = build_issue_message(self.payload, self.app_auth.token())
 
         try:
