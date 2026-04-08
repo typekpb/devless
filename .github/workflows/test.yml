@@ -1,12 +1,18 @@
-name: CI
+name: Test
 
 on:
   push:
+    paths:
+      - 'lambda/**'
+      - '.github/workflows/test.yml'
   pull_request:
+    paths:
+      - 'lambda/**'
+      - '.github/workflows/test.yml'
 
 jobs:
-  test:
-    name: Test
+  lambdas:
+    name: Lambda tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,18 +21,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install lambda dependencies
+      - name: Install dependencies
         run: |
           pip install pytest
           pip install -r lambda/webhook_handler/requirements.txt
           pip install -r lambda/dlq_processor/requirements.txt
 
-      - name: Test lambdas
+      - name: Test
         env:
           AWS_DEFAULT_REGION: eu-central-1
         run: |
           pytest lambda/webhook_handler/tests/ -v
           pytest lambda/dlq_processor/tests/ -v
-
-      - name: Build and test orchestrator
-        run: docker build orchestrator/
