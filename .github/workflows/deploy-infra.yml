@@ -36,6 +36,19 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build Lambda packages
+        run: |
+          for fn in webhook_handler dlq_processor; do
+            rm -rf modules/lambda/builds/$fn
+            mkdir -p modules/lambda/builds/$fn
+            pip install -r ../lambda/$fn/requirements.txt -t modules/lambda/builds/$fn --quiet
+            cp ../lambda/$fn/handler.py modules/lambda/builds/$fn/
+          done
+
       - uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: "~> 1.10"
