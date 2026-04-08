@@ -1,19 +1,55 @@
 data "aws_region" "current" {}
 
-# --- Zip archives for Lambda code ---
+# --- Build Lambda packages (install deps + zip) ---
+
+resource "null_resource" "webhook_handler_build" {
+  triggers = {
+    handler = filesha256("${path.module}/../../../lambda/webhook_handler/handler.py")
+    deps    = filesha256("${path.module}/../../../lambda/webhook_handler/requirements.txt")
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      rm -rf ${path.module}/builds/webhook_handler
+      mkdir -p ${path.module}/builds/webhook_handler
+      pip install -r ${path.module}/../../../lambda/webhook_handler/requirements.txt \
+        -t ${path.module}/builds/webhook_handler --quiet
+      cp ${path.module}/../../../lambda/webhook_handler/handler.py \
+        ${path.module}/builds/webhook_handler/
+    EOT
+  }
+}
 
 data "archive_file" "webhook_handler" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../lambda/webhook_handler"
+  source_dir  = "${path.module}/builds/webhook_handler"
   output_path = "${path.module}/builds/webhook_handler.zip"
-  excludes    = ["__pycache__"]
+  depends_on  = [null_resource.webhook_handler_build]
+}
+
+resource "null_resource" "dlq_processor_build" {
+  triggers = {
+    handler = filesha256("${path.module}/../../../lambda/dlq_processor/handler.py")
+    deps    = filesha256("${path.module}/../../../lambda/dlq_processor/requirements.txt")
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      rm -rf ${path.module}/builds/dlq_processor
+      mkdir -p ${path.module}/builds/dlq_processor
+      pip install -r ${path.module}/../../../lambda/dlq_processor/requirements.txt \
+        -t ${path.module}/builds/dlq_processor --quiet
+      cp ${path.module}/../../../lambda/dlq_processor/handler.py \
+        ${path.module}/builds/dlq_processor/
+    EOT
+  }
 }
 
 data "archive_file" "dlq_processor" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../lambda/dlq_processor"
+  source_dir  = "${path.module}/builds/dlq_processor"
   output_path = "${path.module}/builds/dlq_processor.zip"
-  excludes    = ["__pycache__"]
+  depends_on  = [null_resource.dlq_processor_build]
 }
 
 # --- Webhook Handler Lambda ---

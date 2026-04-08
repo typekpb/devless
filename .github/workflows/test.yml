@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install lambda dependencies
+        run: |
+          pip install pytest
+          pip install -r lambda/webhook_handler/requirements.txt
+          pip install -r lambda/dlq_processor/requirements.txt
+
+      - name: Test lambdas
+        run: |
+          pytest lambda/webhook_handler/tests/ -v
+          pytest lambda/dlq_processor/tests/ -v
+
+      - name: Build and test orchestrator
+        run: docker build orchestrator/

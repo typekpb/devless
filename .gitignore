@@ -7,5 +7,4 @@ terraform/.terraform.lock.hcl
 
 # Lambda build artifacts
 terraform/modules/lambda/builds/
-*.zip
 terraform/tfplan
