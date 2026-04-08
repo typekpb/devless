@@ -96,7 +96,7 @@ def run_aider(
     issue_message: str,
     test_cmd: str,
     max_iterations: int = 10,
-    model: str = "bedrock/anthropic.claude-sonnet-4-20250514-v1:0",
+    model: str = "bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0",
 ) -> AiderResult:
     """Invoke Aider and return the result.
 
