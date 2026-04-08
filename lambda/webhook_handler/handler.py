@@ -124,6 +124,12 @@ def lambda_handler(event: dict, context) -> dict:
     # Determine event type from GitHub header
     gh_event = headers.get("x-github-event", "")
 
+    # Ignore events from bots (e.g. our own GitHub App posting comments)
+    sender = github_payload.get("sender", {})
+    if sender.get("type") == "Bot":
+        logger.info("Ignoring event from bot: %s", sender.get("login", ""))
+        return {"statusCode": 200, "body": json.dumps({"status": "ignored"})}
+
     sqs_message = None
     if gh_event == "check_run":
         sqs_message = _build_ci_fix_message(github_payload)
