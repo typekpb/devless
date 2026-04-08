@@ -62,6 +62,23 @@ sequenceDiagram
     GH->>GH: auto-merge
 ```
 
+### Pipeline state machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending
+    pending --> cloned : clone repo
+    cloned --> agent_loop : run Aider
+    agent_loop --> pr_created : push + open PR
+    agent_loop --> [*] : clarification needed
+    pr_created --> complete : notify
+    complete --> [*]
+
+    agent_loop --> pending : failure (reset checkpoint)
+    cloned --> pending : failure (reset checkpoint)
+    pr_created --> pending : failure (reset checkpoint)
+```
+
 ---
 
 ## Deployment
@@ -221,7 +238,7 @@ role. To verify or customize, see `terraform/modules/iam/main.tf`.
 `.devless/config.yml`:
 
 ```yaml
-model: bedrock/anthropic.claude-sonnet-4-20250514-v1:0
+model: bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0
 ```
 
 SSM setup: none.
@@ -339,7 +356,7 @@ Click "Add webhook". This is a one-time step per target repo.
 
 ```yaml
 # Amazon Bedrock backend (default — uses ECS task role, no API key needed)
-model: bedrock/anthropic.claude-sonnet-4-20250514-v1:0
+model: bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0
 test_command: npm test   # command Aider runs to verify changes (default: pytest)
 max_iterations: 10       # max Aider retry loops (default: 10)
 ```
