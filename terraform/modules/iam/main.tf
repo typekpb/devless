@@ -79,6 +79,11 @@ resource "aws_iam_role_policy" "ecs_task" {
         Action   = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"]
         Resource = var.sqs_queue_arn
       },
+      {
+        Effect   = "Allow"
+        Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+        Resource = "arn:aws:bedrock:*::foundation-model/*"
+      },
     ]
   })
 }
