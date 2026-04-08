@@ -4,7 +4,10 @@
     {
       "Sid": "TerraformState",
       "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket"],
+      "Action": [
+        "s3:GetObject", "s3:PutObject", "s3:DeleteObject",
+        "s3:ListBucket", "s3:GetBucketVersioning", "s3:GetEncryptionConfiguration"
+      ],
       "Resource": [
         "arn:aws:s3:::${project_name}-tf-state",
         "arn:aws:s3:::${project_name}-tf-state/*"
