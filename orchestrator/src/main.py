@@ -33,9 +33,6 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _handle_sigterm)
 
     openai_api_key = os.environ.get("OPENAI_API_KEY", "")
-    if not openai_api_key:
-        log.error("Missing OPENAI_API_KEY environment variable")
-        sys.exit(1)
 
     app_auth = GitHubAppAuth(
         app_id=cfg["GITHUB_APP_ID"],
