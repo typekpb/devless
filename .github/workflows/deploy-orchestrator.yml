@@ -1,0 +1,52 @@
+name: Deploy Orchestrator
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'orchestrator/**'
+      - '.agents/**'
+      - '.github/workflows/deploy-orchestrator.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  docker:
+    name: Build & Push & Deploy
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get ECR URL
+        id: ecr
+        run: |
+          ECR_URL=$(aws ecr describe-repositories \
+            --repository-names devless-orchestrator \
+            --query 'repositories[0].repositoryUri' \
+            --output text)
+          echo "url=${ECR_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        run: |
+          docker build -t "${{ steps.ecr.outputs.url }}:${{ github.sha }}" -t "${{ steps.ecr.outputs.url }}:latest" orchestrator/
+          docker push "${{ steps.ecr.outputs.url }}:${{ github.sha }}"
+          docker push "${{ steps.ecr.outputs.url }}:latest"
+
+      - name: Force ECS redeployment
+        run: |
+          aws ecs update-service \
+            --cluster devless-cluster \
+            --service devless-orchestrator \
+            --force-new-deployment \
+            --region "$AWS_REGION"

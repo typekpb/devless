@@ -1,0 +1,48 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'terraform/**'
+      - 'lambda/**'
+      - '.github/workflows/deploy-infra.yml'
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  TF_VAR_github_app_id: ${{ secrets.TF_VAR_github_app_id }}
+  TF_VAR_github_app_private_key: ${{ secrets.TF_VAR_github_app_private_key }}
+  TF_VAR_github_app_installation_id: ${{ secrets.TF_VAR_github_app_installation_id }}
+  TF_VAR_openai_api_key: ${{ secrets.TF_VAR_openai_api_key }}
+  TF_VAR_webhook_secret: ${{ secrets.TF_VAR_webhook_secret }}
+  TF_VAR_github_actions_org: ${{ secrets.TF_VAR_github_actions_org }}
+
+jobs:
+  terraform:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: terraform
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~> 1.10"
+          terraform_wrapper: false
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve
