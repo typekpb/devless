@@ -1,6 +1,6 @@
 output "api_gateway_url" {
-  description = "Webhook endpoint URL"
-  value       = module.api_gateway.api_endpoint
+  description = "Webhook endpoint URL (use as GitHub webhook Payload URL)"
+  value       = "${module.api_gateway.api_endpoint}/webhook"
 }
 
 output "sqs_queue_url" {
@@ -26,4 +26,10 @@ output "ecs_cluster_name" {
 output "github_actions_role_arn" {
   description = "IAM role ARN for GitHub Actions OIDC federation"
   value       = module.iam.github_actions_role_arn
+}
+
+output "webhook_secret" {
+  description = "Webhook HMAC secret for GitHub webhook registration"
+  value       = var.webhook_secret
+  sensitive   = true
 }

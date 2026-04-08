@@ -13,3 +13,7 @@ output "dlq_arn" {
 output "dlq_url" {
   value = aws_sqs_queue.dlq.url
 }
+
+output "main_queue_name" {
+  value = aws_sqs_queue.main.name
+}

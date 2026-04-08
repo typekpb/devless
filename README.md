@@ -321,28 +321,17 @@ jobs:
 
 ### One-time: webhook registration
 
-`.github/workflows/devless-setup.yml` — run once via Actions → Run workflow:
+In the target repo, go to Settings → Webhooks → Add webhook:
 
-```yaml
-name: Devless Setup
-on:
-  workflow_dispatch:
-permissions:
-  id-token: write
-  contents: read
-jobs:
-  setup:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: typekpb/devless/.github/actions/devless-run@main
-        with:
-          aws_role_arn: ${{ secrets.AWS_ROLE_ARN }}
-          api_gateway_url: ${{ secrets.DEVLESS_API_URL }}
-          webhook_secret_param_name: /devless/webhook-secret
-```
+| Field | Value |
+|---|---|
+| Payload URL | your API Gateway URL (`terraform output api_gateway_url`) |
+| Content type | `application/json` |
+| Secret | your webhook HMAC secret (`terraform output -raw webhook_secret`) |
+| Events | select "Let me select individual events" → check `Issues`, `Issue comments`, `Check runs` |
+| Active | checked |
 
-Add `AWS_ROLE_ARN` and `DEVLESS_API_URL` (the `api_gateway_url` terraform output)
-as secrets in the target repo, then run the workflow.
+Click "Add webhook". This is a one-time step per target repo.
 
 ### Optional: project config
 
@@ -410,8 +399,7 @@ your-project/
 ├── .devless/config.yml           # Optional: model, test_command, max_iterations
 ├── .agents/skills/             # Optional: repo-specific Devless skills
 ├── .github/workflows/
-│   ├── ci.yml                  # Required: runs your tests on PRs
-│   └── devless-setup.yml         # One-time: registers the webhook
+│   └── ci.yml                  # Required: runs your tests on PRs
 └── ...                         # Your code (any language/structure)
 ```
 

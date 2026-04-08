@@ -130,7 +130,7 @@ resource "aws_cloudwatch_metric_alarm" "sqs_messages_high" {
   alarm_actions       = [aws_appautoscaling_policy.scale_out.arn]
 
   dimensions = {
-    QueueName = replace(var.sqs_queue_url, "/.*\\//", "")
+    QueueName = var.sqs_queue_name
   }
 }
 
@@ -165,6 +165,6 @@ resource "aws_cloudwatch_metric_alarm" "sqs_messages_zero" {
   alarm_actions       = [aws_appautoscaling_policy.scale_in_zero.arn]
 
   dimensions = {
-    QueueName = replace(var.sqs_queue_url, "/.*\\//", "")
+    QueueName = var.sqs_queue_name
   }
 }

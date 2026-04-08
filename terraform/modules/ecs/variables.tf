@@ -52,6 +52,10 @@ variable "github_app_installation_id_param_arn" {
   type        = string
 }
 
+variable "sqs_queue_name" {
+  type = string
+}
+
 variable "vpc_id" {
   type = string
 }
