@@ -138,7 +138,6 @@ def run_aider(
             fnames=[],
             auto_test=True,
             test_cmd=test_cmd,
-            git=True,
         )
 
         for _ in range(max_iterations):

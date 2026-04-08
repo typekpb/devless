@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 import logger as log
 from aider_runner import run_aider
-from checkpoint_store import read_checkpoint
+from checkpoint_store import read_checkpoint, delete_checkpoint
 from github_app import GitHubAppAuth
 from github_client import IssueNotifier
 from models import CheckpointState
@@ -68,14 +68,27 @@ def _process_issue(
         )
 
         if checkpoint.stage != "pending":
-            pipeline.repo_path = clone_repo(
-                payload.repository_full_name, token, workspace,
-            )
-            import git as _git
-            _git.Repo(pipeline.repo_path).git.checkout(checkpoint.branch_name)
+            try:
+                pipeline.repo_path = clone_repo(
+                    payload.repository_full_name, token, workspace,
+                )
+                import git as _git
+                _git.Repo(pipeline.repo_path).git.checkout(checkpoint.branch_name)
+            except Exception:
+                log.warning("Failed to resume from checkpoint, starting fresh")
+                delete_checkpoint(payload.issue_number, payload.repository_full_name, s3_bucket)
+                checkpoint.stage = "pending"
+                pipeline = TaskPipeline(
+                    payload=payload, cfg=cfg, app_auth=app_auth,
+                    workspace=workspace, checkpoint=checkpoint,
+                )
 
         pipeline.notify.comment("🚀 Devless has picked up this issue and is starting work.")
-        pipeline.run_to_completion()
+        try:
+            pipeline.run_to_completion()
+        except Exception:
+            delete_checkpoint(payload.issue_number, payload.repository_full_name, s3_bucket)
+            raise
 
     try:
         delete_message(queue_url, msg.receipt_handle)

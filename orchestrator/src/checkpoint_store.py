@@ -38,3 +38,13 @@ def read_checkpoint(
         if exc.response["Error"]["Code"] in ("NoSuchKey", "404"):
             return None
         raise
+
+
+def delete_checkpoint(issue_number: int, repo: str, bucket: str) -> None:
+    """Delete checkpoint from S3 so the next attempt starts fresh."""
+    key = _s3_key(repo, issue_number)
+    client = boto3.client("s3")
+    try:
+        client.delete_object(Bucket=bucket, Key=key)
+    except ClientError:
+        pass  # best-effort
