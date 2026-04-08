@@ -78,6 +78,11 @@ def _process_issue(
                 log.warning("Failed to resume from checkpoint, starting fresh")
                 delete_checkpoint(payload.issue_number, payload.repository_full_name, s3_bucket)
                 checkpoint.stage = "pending"
+                # Clean workspace so clone_repo can start fresh
+                import shutil
+                repo_dir = os.path.join(workspace, "repo")
+                if os.path.exists(repo_dir):
+                    shutil.rmtree(repo_dir)
                 pipeline = TaskPipeline(
                     payload=payload, cfg=cfg, app_auth=app_auth,
                     workspace=workspace, checkpoint=checkpoint,
