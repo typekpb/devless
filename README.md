@@ -20,12 +20,10 @@ Events handled:
 sequenceDiagram
     actor Dev
     participant GH as GitHub
-    box AWS
-        participant WH as Webhook Handler
-        participant SQS
-        participant Orch as Orchestrator
-        participant Aider
-    end
+    participant WH as Webhook Handler (AWS)
+    participant SQS as SQS (AWS)
+    participant Orch as Orchestrator (AWS)
+    participant Aider as Aider (AWS)
 
     alt new issue
         Dev->>GH: open issue
@@ -185,27 +183,27 @@ graph LR
     subgraph Orchestrator
         Pipeline[Pipeline Runner] --> Core[Aider Core]
         Core --> Router{Model Router}
-        Config[".devless/config.yml"] -.->|model| Router
+        Config[.devless/config.yml] -.->|model| Router
     end
 
-    subgraph Bedrock["Amazon Bedrock (default)"]
-        BR[Claude Sonnet / etc.]
-        BR_auth["Auth: IAM task role\nSSM: none"]
+    subgraph Bedrock[Amazon Bedrock - default]
+        BR[Claude Sonnet]
+        BR_auth[Auth: IAM task role]
     end
 
-    subgraph OpenAI
-        OAI[GPT-4o / o3 / etc.]
-        OAI_auth["Auth: OPENAI_API_KEY\nSSM: /devless/openai-api-key"]
+    subgraph OpenAI[OpenAI API]
+        OAI[GPT-4o, o3]
+        OAI_auth[Auth: OPENAI_API_KEY]
     end
 
-    subgraph Azure["Azure OpenAI"]
-        AZ[GPT-4o / etc.]
-        AZ_auth["Auth: AZURE_API_KEY\nSSM: /devless/azure-api-*"]
+    subgraph Azure[Azure OpenAI]
+        AZ[GPT-4o]
+        AZ_auth[Auth: AZURE_API_KEY]
     end
 
-    Router -->|"bedrock/*"| BR
-    Router -->|"o3, gpt-4o, ..."| OAI
-    Router -->|"azure/*"| AZ
+    Router -->|bedrock| BR
+    Router -->|openai| OAI
+    Router -->|azure| AZ
 ```
 
 Each target repo chooses its LLM backend via `.devless/config.yml`. The
