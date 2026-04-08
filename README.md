@@ -236,7 +236,7 @@ role. To verify or customize, see `terraform/modules/iam/main.tf`.
 `.devless/config.yml`:
 
 ```yaml
-model: bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0
+model: bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0
 ```
 
 SSM setup: none.
@@ -354,7 +354,7 @@ Click "Add webhook". This is a one-time step per target repo.
 
 ```yaml
 # Amazon Bedrock backend (default — uses ECS task role, no API key needed)
-model: bedrock/us.anthropic.claude-sonnet-4-20250514-v1:0
+model: bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0
 test_command: npm test   # command Aider runs to verify changes (default: pytest)
 max_iterations: 10       # max Aider retry loops (default: 10)
 ```
