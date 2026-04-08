@@ -39,7 +39,7 @@ def test_posts_failure_comment(mock_comment, mock_token):
     args = mock_comment.call_args
     assert args[0][0] == "owner/repo"
     assert args[0][1] == 42
-    assert "failed after 3 attempts" in args[0][2]
+    assert "failed and has been moved" in args[0][2]
     assert args[0][3] == "fake-token"
 
 
