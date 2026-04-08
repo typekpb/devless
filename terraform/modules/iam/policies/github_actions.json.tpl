@@ -18,10 +18,16 @@
       "Effect": "Allow",
       "Action": [
         "ssm:GetParameter", "ssm:PutParameter", "ssm:DeleteParameter",
-        "ssm:DescribeParameters", "ssm:GetParameters",
-        "ssm:ListTagsForResource", "ssm:AddTagsToResource", "ssm:RemoveTagsFromResource"
+        "ssm:GetParameters", "ssm:ListTagsForResource",
+        "ssm:AddTagsToResource", "ssm:RemoveTagsFromResource"
       ],
       "Resource": "arn:aws:ssm:${region}:${account_id}:parameter/${project_name}/*"
+    },
+    {
+      "Sid": "SSMDescribe",
+      "Effect": "Allow",
+      "Action": ["ssm:DescribeParameters"],
+      "Resource": "*"
     },
     {
       "Sid": "ECR",
@@ -80,7 +86,8 @@
       "Action": [
         "lambda:ListEventSourceMappings", "lambda:GetEventSourceMapping",
         "lambda:CreateEventSourceMapping", "lambda:UpdateEventSourceMapping",
-        "lambda:DeleteEventSourceMapping"
+        "lambda:DeleteEventSourceMapping", "lambda:ListTags", "lambda:TagResource",
+        "lambda:UntagResource"
       ],
       "Resource": "*"
     },
