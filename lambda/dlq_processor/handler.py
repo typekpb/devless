@@ -65,7 +65,7 @@ def _post_comment(repo_full_name: str, issue_number: int, body: str, token: str)
 # ---------------------------------------------------------------------------
 
 _FAILURE_COMMENT = (
-    "\u26a0\ufe0f This task failed after 3 attempts and has been moved to the "
+    "\u26a0\ufe0f This task failed and has been moved to the "
     "dead letter queue. Please review the issue description and add a comment "
     "to retry."
 )
