@@ -62,21 +62,19 @@ sequenceDiagram
     GH->>GH: auto-merge
 ```
 
-### Pipeline state machine
+### Orchestrator pipeline (Aider state machine)
 
 ```mermaid
 stateDiagram-v2
     [*] --> pending
-    pending --> cloned : clone repo
-    cloned --> agent_loop : run Aider
-    agent_loop --> pr_created : push + open PR
-    agent_loop --> [*] : clarification needed
-    pr_created --> complete : notify
+    pending --> cloned : git clone + create branch
+    cloned --> code_generated : load config, fetch comments, run Aider
+    cloned --> [*] : Aider needs clarification
+    cloned --> pending : Aider or clone failure (reset)
+    code_generated --> pr_created : git push + open/update PR
+    pr_created --> complete : post success comment
+    pr_created --> pending : push or PR failure (reset)
     complete --> [*]
-
-    agent_loop --> pending : failure (reset checkpoint)
-    cloned --> pending : failure (reset checkpoint)
-    pr_created --> pending : failure (reset checkpoint)
 ```
 
 ---
