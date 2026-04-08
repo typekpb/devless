@@ -73,6 +73,7 @@ module "ecs" {
   task_role_arn                 = module.iam.ecs_task_role_arn
   sqs_queue_url                 = module.sqs.main_queue_url
   sqs_queue_arn                 = module.sqs.main_queue_arn
+  sqs_queue_name                = module.sqs.main_queue_name
   s3_bucket_name                = module.s3.bucket_name
   github_app_id_param_arn             = module.secrets.github_app_id_param_arn
   openai_api_key_param_arn      = module.secrets.openai_api_key_param_arn
