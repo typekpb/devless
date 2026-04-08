@@ -88,7 +88,7 @@ def _process_issue(
                     workspace=workspace, checkpoint=checkpoint,
                 )
 
-        pipeline.notify.comment("🚀 Devless has picked up this issue and is starting work.")
+        pipeline.notify.comment("🚀 Devless is working on this issue. This may take a few minutes.")
         try:
             pipeline.run_to_completion()
         except Exception:

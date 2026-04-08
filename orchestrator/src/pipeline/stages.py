@@ -108,10 +108,6 @@ class TaskPipeline:
 
     def on_enter_agent_loop(self) -> None:
         log.info("Starting Aider agentic loop")
-        self.notify.comment(
-            "🔧 Devless is now analyzing the issue and generating code changes. "
-            "This may take a few minutes."
-        )
         devless_cfg = load_devless_config(self.repo_path)
         issue_message = build_issue_message(self.payload, self.app_auth.token())
 
