@@ -48,6 +48,18 @@ def clone_repo(repo_full_name: str, token: str, workspace: str) -> str:
     repo.config_writer().set_value("user", "name", "Devless Bot").release()
     repo.config_writer().set_value("user", "email", "devless-bot@users.noreply.github.com").release()
     
+    # Add default .aiderignore if repo doesn't have one (untracked, won't be in PRs)
+    aiderignore_path = os.path.join(repo_dir, ".aiderignore")
+    if not os.path.exists(aiderignore_path):
+        default_aiderignore = os.path.join(os.path.dirname(__file__), ".aiderignore.default")
+        if os.path.exists(default_aiderignore):
+            with open(default_aiderignore, "r") as src, open(aiderignore_path, "w") as dst:
+                dst.write(src.read())
+            # Add to local git exclude so it won't appear in PRs
+            exclude_path = os.path.join(repo_dir, ".git", "info", "exclude")
+            with open(exclude_path, "a") as f:
+                f.write("\n.aiderignore\n")
+    
     return repo_dir
 
 
