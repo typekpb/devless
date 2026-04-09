@@ -42,7 +42,12 @@ def clone_repo(repo_full_name: str, token: str, workspace: str) -> str:
     """Clone the target repository into the workspace. Returns local path."""
     repo_dir = os.path.join(workspace, "repo")
     clone_url = f"https://x-access-token:{token}@github.com/{repo_full_name}.git"
-    git.Repo.clone_from(clone_url, repo_dir)
+    repo = git.Repo.clone_from(clone_url, repo_dir)
+    
+    # Configure git user for commits
+    repo.config_writer().set_value("user", "name", "Devless Bot").release()
+    repo.config_writer().set_value("user", "email", "devless-bot@users.noreply.github.com").release()
+    
     return repo_dir
 
 
