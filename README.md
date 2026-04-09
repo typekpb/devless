@@ -431,6 +431,7 @@ Run Aider against a target repo without the orchestrator to verify the LLM
 integration works:
 
 ```bash
+python -m venv .venv && source .venv/bin/activate
 pip install aider-chat
 
 cd /tmp
@@ -453,8 +454,7 @@ You need the GitHub App private key and AWS credentials configured.
 
 ```bash
 cd orchestrator
-
-# Install dependencies
+python -m venv .venv && source .venv/bin/activate
 pip install -e .
 
 # Set required environment variables
@@ -478,18 +478,20 @@ To process a single issue without SQS (useful for debugging):
 cd /tmp
 git clone https://github.com/typekpb/devless-demo.git
 cd devless-demo
+python -m venv .venv && source .venv/bin/activate
+pip install aider-chat
 
 export AWS_REGION=eu-central-1
 
 python -c "
-from aider_runner import run_aider
-result = run_aider(
-    workspace='.',
-    issue_message='Create a landing page with hero section and nav bar',
-    test_cmd='npm test',
-    model='bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0',
-)
-print(result.success, result.output[:2000])
+from aider.coders import Coder
+from aider.models import Model
+from aider.io import InputOutput
+
+io = InputOutput(yes=True)
+model = Model('bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0')
+coder = Coder.create(main_model=model, io=io, fnames=[])
+coder.run('Create a landing page with hero section and nav bar')
 "
 ```
 
