@@ -31,6 +31,9 @@ jobs:
 
       - uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Get ECR URL
         id: ecr
         run: |
@@ -40,11 +43,15 @@ jobs:
             --output text)
           echo "url=${ECR_URL}" >> "$GITHUB_OUTPUT"
 
-      - name: Build and push
-        run: |
-          docker build -t "${{ steps.ecr.outputs.url }}:${{ github.sha }}" -t "${{ steps.ecr.outputs.url }}:latest" orchestrator/
-          docker push "${{ steps.ecr.outputs.url }}:${{ github.sha }}"
-          docker push "${{ steps.ecr.outputs.url }}:latest"
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: orchestrator/
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.url }}:${{ github.sha }}
+            ${{ steps.ecr.outputs.url }}:latest
 
       - name: Force ECS redeployment
         run: |

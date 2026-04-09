@@ -431,7 +431,8 @@ Run Aider against a target repo without the orchestrator to verify the LLM
 integration works:
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
+# Requires Python 3.11 or 3.12 (aider-chat doesn't support 3.14 yet)
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install aider-chat
 
 cd /tmp
@@ -454,7 +455,8 @@ You need the GitHub App private key and AWS credentials configured.
 
 ```bash
 cd orchestrator
-python -m venv .venv && source .venv/bin/activate
+# Requires Python 3.11 or 3.12 (aider-chat doesn't support 3.14 yet)
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e .
 
 # Set required environment variables
@@ -478,7 +480,8 @@ To process a single issue without SQS (useful for debugging):
 cd /tmp
 git clone https://github.com/typekpb/devless-demo.git
 cd devless-demo
-python -m venv .venv && source .venv/bin/activate
+# Requires Python 3.11 or 3.12 (aider-chat doesn't support 3.14 yet)
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install aider-chat
 
 export AWS_REGION=eu-central-1

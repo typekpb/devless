@@ -8,3 +8,7 @@ terraform/.terraform.lock.hcl
 # Lambda build artifacts
 terraform/modules/lambda/builds/
 terraform/tfplan
+
+.idea/
+.venv/
+.env.*
