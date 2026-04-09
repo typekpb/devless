@@ -12,3 +12,5 @@ terraform/tfplan
 .idea/
 .venv/
 .env.*
+
+__pycache__/
