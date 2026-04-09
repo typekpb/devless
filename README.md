@@ -13,6 +13,7 @@ own branches. PRs auto-merge after passing review and checks.
 Events handled:
 - `issues` / `issue_comment` → full pipeline (clone → Aider → PR)
 - `check_run` / `workflow_run` (failure on `issue-N` branches) → CI fix pipeline (checkout → Aider fix → push)
+- `pull_request_review_comment` / `pull_request_review` → PR feedback pipeline (checkout → Aider changes → push to same PR)
 
 ## How it works end-to-end
 
@@ -348,15 +349,16 @@ In the target repo, go to Settings → Webhooks → Add webhook:
 | Payload URL | your API Gateway URL (`terraform output api_gateway_url`) |
 | Content type | `application/json` |
 | Secret | your webhook HMAC secret (`terraform output -raw webhook_secret`) |
-| Events | select "Let me select individual events" → check `Issues`, `Issue comments`, `Check runs`, `Workflow runs` |
+| Events | select "Let me select individual events" → check `Issues`, `Issue comments`, `Check runs`, `Workflow runs`, `Pull request review comments`, `Pull request reviews` |
 | Active | checked |
 
 Click "Add webhook". This is a one-time step per target repo.
 
 > **Updating existing webhooks:** If you already have a webhook configured, go to
 > Settings → Webhooks → click on your webhook → scroll to "Which events would you
-> like to trigger this webhook?" → ensure `Workflow runs` is checked (in addition
-> to the other events). This enables automatic CI failure detection and fixes.
+> like to trigger this webhook?" → ensure all required events are checked:
+> `Issues`, `Issue comments`, `Check runs`, `Workflow runs`, `Pull request review comments`,
+> `Pull request reviews`. This enables automatic CI failure detection, fixes, and PR feedback handling.
 
 ### Optional: project config
 

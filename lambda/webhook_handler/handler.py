@@ -35,7 +35,18 @@ def _build_issue_message(event: dict) -> dict | None:
     repository = event.get("repository", {})
     sender = event.get("sender", {})
 
-    if "comment" in event:
+    # Check if this is a comment on a PR (PRs have a pull_request key in the issue object)
+    is_pr_comment = "pull_request" in issue and "comment" in event
+    
+    if is_pr_comment:
+        # This is a comment on a PR - check if it's a Devless-managed branch
+        # We need to extract the branch from the PR
+        pr_url = issue.get("pull_request", {}).get("url", "")
+        # The branch info isn't in the issue_comment event, so we'll mark it
+        # and let the orchestrator fetch the PR details
+        msg_event_type = "pr_issue_comment"
+        body = comment.get("body", "")
+    elif "comment" in event:
         msg_event_type = "issue_comment"
         body = comment.get("body", "")
     else:
@@ -52,6 +63,85 @@ def _build_issue_message(event: dict) -> dict | None:
         "repository_full_name": repository.get("full_name", ""),
         "sender_login": sender.get("login", ""),
         "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def _build_pr_comment_message(event: dict) -> dict | None:
+    """Build SQS message from a PR comment or review comment.
+
+    Extracts the issue number from the PR branch name (issue-N pattern).
+    Returns None if not a Devless-managed PR.
+    """
+    pull_request = event.get("pull_request", {})
+    comment = event.get("comment", {})
+    repository = event.get("repository", {})
+    sender = event.get("sender", {})
+
+    # Get branch name from PR
+    head_branch = pull_request.get("head", {}).get("ref", "")
+    if not head_branch:
+        return None
+
+    match = _DEVLESS_BRANCH_RE.match(head_branch)
+    if not match:
+        logger.info("PR branch %s is not a Devless-managed branch", head_branch)
+        return None
+
+    issue_number = int(match.group(1))
+    comment_body = comment.get("body", "")
+    pr_title = pull_request.get("title", "")
+
+    from datetime import datetime, timezone
+
+    return {
+        "event_type": "pr_comment",
+        "issue_number": issue_number,
+        "issue_title": pr_title,
+        "issue_body": comment_body,
+        "repository_full_name": repository.get("full_name", ""),
+        "sender_login": sender.get("login", ""),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "branch": head_branch,
+    }
+
+
+def _build_pr_review_message(event: dict) -> dict | None:
+    """Build SQS message from a PR review submission.
+
+    Extracts the issue number from the PR branch name (issue-N pattern).
+    Returns None if not a Devless-managed PR.
+    """
+    pull_request = event.get("pull_request", {})
+    review = event.get("review", {})
+    repository = event.get("repository", {})
+    sender = event.get("sender", {})
+
+    # Get branch name from PR
+    head_branch = pull_request.get("head", {}).get("ref", "")
+    if not head_branch:
+        return None
+
+    match = _DEVLESS_BRANCH_RE.match(head_branch)
+    if not match:
+        logger.info("PR branch %s is not a Devless-managed branch", head_branch)
+        return None
+
+    issue_number = int(match.group(1))
+    review_body = review.get("body", "")
+    review_state = review.get("state", "")  # commented, approved, changes_requested
+    pr_title = pull_request.get("title", "")
+
+    from datetime import datetime, timezone
+
+    return {
+        "event_type": "pr_review",
+        "issue_number": issue_number,
+        "issue_title": pr_title,
+        "issue_body": f"Review ({review_state}): {review_body}",
+        "repository_full_name": repository.get("full_name", ""),
+        "sender_login": sender.get("login", ""),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "branch": head_branch,
     }
 
 
@@ -187,6 +277,12 @@ def lambda_handler(event: dict, context) -> dict:
         sqs_message = _build_ci_fix_message(github_payload)
     elif gh_event == "workflow_run":
         sqs_message = _build_workflow_run_fix_message(github_payload)
+    elif gh_event == "pull_request_review_comment":
+        sqs_message = _build_pr_comment_message(github_payload)
+    elif gh_event == "pull_request_review":
+        # Handle review comments (when someone submits a review with comments)
+        if github_payload.get("review", {}).get("body"):
+            sqs_message = _build_pr_review_message(github_payload)
     elif gh_event in ("issues", "issue_comment"):
         sqs_message = _build_issue_message(github_payload)
 

@@ -10,7 +10,7 @@ import logger as log
 from aider_runner import run_aider
 from checkpoint_store import write_checkpoint
 from github_app import GitHubAppAuth
-from github_client import IssueNotifier, build_issue_message
+from issue_manager import IssueNotifier, build_issue_message
 from models import CheckpointState, TaskPayload
 from pr_manager import create_or_update_pr
 from repo_manager import clone_repo, create_branch, load_devless_config, push_branch

@@ -1,4 +1,4 @@
-"""GitHub Pull Request creation, updating, and comment posting."""
+"""GitHub Pull Request creation, updating, and auto-merge."""
 from __future__ import annotations
 
 from github import Github
@@ -95,20 +95,3 @@ def create_or_update_pr(
         return pr.html_url
 
     return retry_with_backoff(_do_create_or_update)
-
-
-def post_comment(
-    repo_full_name: str,
-    issue_number: int,
-    body: str,
-    token: str,
-) -> None:
-    """Post a comment on a GitHub Issue."""
-
-    def _do_post_comment() -> None:
-        gh = Github(token)
-        repo = gh.get_repo(repo_full_name)
-        issue = repo.get_issue(issue_number)
-        issue.create_comment(body)
-
-    retry_with_backoff(_do_post_comment)

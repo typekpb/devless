@@ -9,14 +9,14 @@ from pydantic import BaseModel
 class TaskPayload(BaseModel):
     """Represents the SQS message payload from a GitHub webhook event."""
 
-    event_type: Literal["issues", "issue_comment", "ci_fix"]
+    event_type: Literal["issues", "issue_comment", "ci_fix", "pr_comment", "pr_review", "pr_issue_comment"]
     issue_number: int
     issue_title: str
     issue_body: str
     repository_full_name: str
     sender_login: str
     timestamp: str  # ISO 8601
-    branch: str | None = None  # set for ci_fix events
+    branch: str | None = None  # set for ci_fix, pr_comment, pr_review events
 
 
 class CheckpointState(BaseModel):
