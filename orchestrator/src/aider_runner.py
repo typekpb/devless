@@ -153,6 +153,10 @@ def run_aider(
 
         io_obj = InputOutput(yes=True)
         model = Model(model)
+
+        old_stdout.write('{"level":"INFO","message":"Creating Aider coder instance"}\n')
+        old_stdout.flush()
+
         coder = Coder.create(
             main_model=model,
             io=io_obj,
@@ -160,6 +164,9 @@ def run_aider(
             auto_test=True,
             test_cmd=test_cmd,
         )
+
+        old_stdout.write('{"level":"INFO","message":"Aider coder created, starting iterations"}\n')
+        old_stdout.flush()
 
         for i in range(max_iterations):
             # Log to original stdout (not captured) so it reaches CloudWatch
