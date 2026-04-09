@@ -27,7 +27,10 @@ COPY pyproject.toml .
 COPY src/ ./src/
 COPY .agents/ ./.agents/
 
-RUN pip install .
+# Install dependencies and Playwright browser
+RUN pip install . \
+    && python -m playwright install --with-deps chromium \
+    && rm -rf /root/.cache/pip
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/src
