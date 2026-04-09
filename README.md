@@ -423,6 +423,78 @@ auto-fixes CI failures, and auto-merges after approval.
 
 ---
 
+## Local development
+
+### Testing Aider + Bedrock directly
+
+Run Aider against a target repo without the orchestrator to verify the LLM
+integration works:
+
+```bash
+pip install aider-chat
+
+cd /tmp
+git clone https://github.com/typekpb/devless-demo.git
+cd devless-demo
+
+export AWS_REGION=eu-central-1
+
+aider --model bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0 \
+  --message "Describe the change you want to test"
+```
+
+This uses your local AWS credentials for Bedrock. If it works here but not
+in ECS, the issue is with the orchestrator or IAM roles, not Aider/Bedrock.
+
+### Running the orchestrator locally
+
+The orchestrator can run locally against the real AWS services (SQS, S3, Bedrock).
+You need the GitHub App private key and AWS credentials configured.
+
+```bash
+cd orchestrator
+
+# Install dependencies
+pip install -e .
+
+# Set required environment variables
+export SQS_QUEUE_URL=$(cd ../terraform && terraform output -raw sqs_queue_url)
+export S3_BUCKET=$(cd ../terraform && terraform output -raw s3_bucket_name)
+export AWS_REGION=eu-central-1
+export GITHUB_APP_ID=your-app-id
+export GITHUB_APP_PRIVATE_KEY="$(cat ../terraform/github-app-private-key.pem)"
+export GITHUB_APP_INSTALLATION_ID=your-installation-id
+
+# Run
+python -m main
+```
+
+The orchestrator will poll SQS and process messages exactly as it does in ECS.
+Trigger a webhook by commenting on a GitHub issue in a target repo.
+
+To process a single issue without SQS (useful for debugging):
+
+```bash
+cd /tmp
+git clone https://github.com/typekpb/devless-demo.git
+cd devless-demo
+
+export AWS_REGION=eu-central-1
+
+python -c "
+from aider_runner import run_aider
+result = run_aider(
+    workspace='.',
+    issue_message='Create a landing page with hero section and nav bar',
+    test_cmd='npm test',
+    model='bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0',
+)
+print(result.success, result.output[:2000])
+"
+```
+
+---
+
 ## Prerequisites
 
 - AWS account with CLI configured
