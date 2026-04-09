@@ -1,16 +1,51 @@
+# Terraform
 terraform/terraform.tfvars
 terraform/github-app-private-key.pem
 terraform/.terraform/
 terraform/*.tfstate
 terraform/*.tfstate.backup
 terraform/.terraform.lock.hcl
+terraform/tfplan
 
 # Lambda build artifacts
 terraform/modules/lambda/builds/
-terraform/tfplan
 
+# IDE
 .idea/
-.venv/
-.env.*
+.vscode/
+*.swp
+*.swo
 
+# Python
+.venv/
+venv/
 __pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+.eggs/
+dist/
+build/
+.pytest_cache/
+.hypothesis/
+.mypy_cache/
+.ruff_cache/
+
+# Node/Bun
+node_modules/
+bun.lock
+package-lock.json
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
