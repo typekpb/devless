@@ -156,7 +156,7 @@ resource "aws_appautoscaling_policy" "scale_in_zero" {
 resource "aws_cloudwatch_metric_alarm" "sqs_messages_zero" {
   alarm_name          = "${var.project_name}-sqs-zero"
   comparison_operator = "LessThanOrEqualToThreshold"
-  evaluation_periods  = 5
+  evaluation_periods  = 30
   metric_name         = "ApproximateNumberOfMessagesVisible"
   namespace           = "AWS/SQS"
   period              = 60
