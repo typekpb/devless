@@ -161,8 +161,13 @@ def run_aider(
             test_cmd=test_cmd,
         )
 
-        for _ in range(max_iterations):
+        for i in range(max_iterations):
+            # Log to original stdout (not captured) so it reaches CloudWatch
+            old_stdout.write(f'{{"level":"INFO","message":"Aider iteration {i+1}/{max_iterations} starting"}}\n')
+            old_stdout.flush()
             coder.run(issue_message)
+            old_stdout.write(f'{{"level":"INFO","message":"Aider iteration {i+1}/{max_iterations} finished"}}\n')
+            old_stdout.flush()
 
             # Check captured output for clarification signal before continuing
             current_output = captured.getvalue()
