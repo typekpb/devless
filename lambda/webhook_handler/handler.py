@@ -66,18 +66,25 @@ def _build_ci_fix_message(event: dict) -> dict | None:
 
     # Only process check runs on branches created by the orchestrator
     head_branch = ""
+    
+    # Try to get branch from pull_requests first
     for pr in check_run.get("pull_requests", []):
         head_branch = pr.get("head", {}).get("ref", "")
         if head_branch:
             break
 
+    # Fallback: try to get branch from check_suite
     if not head_branch:
-        head_sha = check_run.get("head_sha", "")
-        # Can't determine branch from check_run alone without PRs
+        check_suite = check_run.get("check_suite", {})
+        head_branch = check_suite.get("head_branch", "")
+
+    if not head_branch:
+        logger.info("Could not determine branch from check_run event")
         return None
 
     match = _DEVLESS_BRANCH_RE.match(head_branch)
     if not match:
+        logger.info("Branch %s is not a Devless-managed branch", head_branch)
         return None  # not a Devless-managed branch
 
     issue_number = int(match.group(1))
@@ -95,6 +102,51 @@ def _build_ci_fix_message(event: dict) -> dict | None:
         "issue_body": (
             f"The check `{check_name}` failed on branch `{head_branch}`.\n\n"
             f"## Failure details\n\n{summary[:3000]}"
+        ),
+        "repository_full_name": repository.get("full_name", ""),
+        "sender_login": "github-actions",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "branch": head_branch,
+    }
+
+
+def _build_workflow_run_fix_message(event: dict) -> dict | None:
+    """Build SQS message from a workflow_run failure on a Devless branch.
+
+    Returns None if the event is not a completed failure on an issue-N branch.
+    """
+    workflow_run = event.get("workflow_run", {})
+    
+    # Only process completed failures
+    if workflow_run.get("status") != "completed":
+        return None
+    if workflow_run.get("conclusion") not in ("failure", "timed_out"):
+        return None
+
+    head_branch = workflow_run.get("head_branch", "")
+    if not head_branch:
+        return None
+
+    match = _DEVLESS_BRANCH_RE.match(head_branch)
+    if not match:
+        logger.info("Branch %s is not a Devless-managed branch", head_branch)
+        return None
+
+    issue_number = int(match.group(1))
+    repository = event.get("repository", {})
+    workflow_name = workflow_run.get("name", "CI")
+    html_url = workflow_run.get("html_url", "")
+
+    from datetime import datetime, timezone
+
+    return {
+        "event_type": "ci_fix",
+        "issue_number": issue_number,
+        "issue_title": f"CI fix: {workflow_name} failed on {head_branch}",
+        "issue_body": (
+            f"The workflow `{workflow_name}` failed on branch `{head_branch}`.\n\n"
+            f"[View workflow run]({html_url})\n\n"
+            f"Please analyze the failure and fix the code."
         ),
         "repository_full_name": repository.get("full_name", ""),
         "sender_login": "github-actions",
@@ -133,6 +185,8 @@ def lambda_handler(event: dict, context) -> dict:
     sqs_message = None
     if gh_event == "check_run":
         sqs_message = _build_ci_fix_message(github_payload)
+    elif gh_event == "workflow_run":
+        sqs_message = _build_workflow_run_fix_message(github_payload)
     elif gh_event in ("issues", "issue_comment"):
         sqs_message = _build_issue_message(github_payload)
 

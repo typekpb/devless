@@ -12,7 +12,7 @@ own branches. PRs auto-merge after passing review and checks.
 
 Events handled:
 - `issues` / `issue_comment` → full pipeline (clone → Aider → PR)
-- `check_run` (failure on `issue-N` branches) → CI fix pipeline (checkout → Aider fix → push)
+- `check_run` / `workflow_run` (failure on `issue-N` branches) → CI fix pipeline (checkout → Aider fix → push)
 
 ## How it works end-to-end
 
@@ -47,9 +47,14 @@ sequenceDiagram
     Orch->>GH: open PR
     deactivate Orch
 
-    loop CI fails
-        GH->>Orch: check_run failure
+    loop CI fails on issue-N branch
+        GH->>WH: check_run/workflow_run failure
+        activate WH
+        WH->>SQS: enqueue ci_fix task
+        deactivate WH
+        SQS->>Orch: deliver message
         activate Orch
+        Orch->>GH: checkout branch
         Orch->>Aider: fix code
         activate Aider
         Aider-->>Orch: result
@@ -68,12 +73,12 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> pending
     pending --> cloned : git clone + create branch
-    cloned --> code_generated : load config, fetch comments, run Aider
-    cloned --> [*] : Aider needs clarification
-    cloned --> pending : Aider or clone failure (reset)
-    code_generated --> pr_created : git push + open/update PR
+    cloned --> agent_loop : load config, fetch comments, run Aider
+    agent_loop --> [*] : Aider needs clarification
+    cloned --> pending : clone failure (reset)
+    agent_loop --> pr_created : git push + open/update PR
     pr_created --> complete : post success comment
-    pr_created --> pending : push or PR failure (reset)
+    agent_loop --> pending : Aider failure (reset)
     complete --> [*]
 ```
 
@@ -343,10 +348,15 @@ In the target repo, go to Settings → Webhooks → Add webhook:
 | Payload URL | your API Gateway URL (`terraform output api_gateway_url`) |
 | Content type | `application/json` |
 | Secret | your webhook HMAC secret (`terraform output -raw webhook_secret`) |
-| Events | select "Let me select individual events" → check `Issues`, `Issue comments`, `Check runs` |
+| Events | select "Let me select individual events" → check `Issues`, `Issue comments`, `Check runs`, `Workflow runs` |
 | Active | checked |
 
 Click "Add webhook". This is a one-time step per target repo.
+
+> **Updating existing webhooks:** If you already have a webhook configured, go to
+> Settings → Webhooks → click on your webhook → scroll to "Which events would you
+> like to trigger this webhook?" → ensure `Workflow runs` is checked (in addition
+> to the other events). This enables automatic CI failure detection and fixes.
 
 ### Optional: project config
 
