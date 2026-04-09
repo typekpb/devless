@@ -1,9 +1,7 @@
 """Aider invocation via the Python API."""
 from __future__ import annotations
 
-import io
 import os
-import sys
 from dataclasses import dataclass
 
 from aider.coders import Coder
@@ -115,73 +113,45 @@ def run_aider(
     Returns:
         An :class:`AiderResult` describing the outcome.
     """
-    captured = io.StringIO()
+    import logger as log
+    log.info("run_aider called", workspace=workspace, model=model)
 
-    class TeeWriter:
-        """Writes to both the capture buffer and logs lines to structured logger."""
-        def __init__(self, buf):
-            self._buf = buf
-            self._line = []
-
-        def write(self, s):
-            self._buf.write(s)
-            self._line.append(s)
-            if "\n" in s:
-                import logger as _log
-                text = "".join(self._line).rstrip()
-                if text:
-                    _log.info("aider", output=text[:500])
-                self._line = []
-
-        def flush(self):
-            self._buf.flush()
-
-    tee = TeeWriter(captured)
-
-    # Redirect stdout and stderr to capture Aider output
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
-    sys.stdout = tee
-    sys.stderr = tee
-
+    output_lines: list[str] = []
     original_dir = os.getcwd()
     success = False
 
     try:
         # Change to workspace directory so Aider operates on the right repo
         os.chdir(workspace)
+        log.info("Changed to workspace", cwd=os.getcwd())
 
+        log.info("Creating InputOutput")
         io_obj = InputOutput(yes=True)
-        model = Model(model)
+        log.info("InputOutput created")
 
-        old_stdout.write('{"level":"INFO","message":"Creating Aider coder instance"}\n')
-        old_stdout.flush()
+        log.info("Creating Model", model=model)
+        model_obj = Model(model)
+        log.info("Model created")
 
+        log.info("Creating Aider coder instance")
         coder = Coder.create(
-            main_model=model,
+            main_model=model_obj,
             io=io_obj,
             fnames=[],
             auto_test=True,
             test_cmd=test_cmd,
         )
-
-        old_stdout.write('{"level":"INFO","message":"Aider coder created, starting iterations"}\n')
-        old_stdout.flush()
+        log.info("Aider coder created, starting iterations")
 
         for i in range(max_iterations):
-            # Log to original stdout (not captured) so it reaches CloudWatch
-            old_stdout.write(f'{{"level":"INFO","message":"Aider iteration {i+1}/{max_iterations} starting"}}\n')
-            old_stdout.flush()
+            log.info("Aider iteration starting", iteration=i + 1, max=max_iterations)
             coder.run(issue_message)
-            old_stdout.write(f'{{"level":"INFO","message":"Aider iteration {i+1}/{max_iterations} finished"}}\n')
-            old_stdout.flush()
+            log.info("Aider iteration finished", iteration=i + 1, max=max_iterations)
 
-            # Check captured output for clarification signal before continuing
-            current_output = captured.getvalue()
+            # Check for clarification signal
+            current_output = "\n".join(output_lines)
             needs_clarification, question = _detect_clarification(current_output)
             if needs_clarification:
-                sys.stdout = old_stdout
-                sys.stderr = old_stderr
                 os.chdir(original_dir)
                 return AiderResult(
                     success=False,
@@ -193,28 +163,25 @@ def run_aider(
             # Req 2.5: task is done when Aider exits with zero status and tests pass.
             # Aider signals completion via last_aider_commit_hash being set.
             if coder.last_aider_commit_hash:
+                log.info("Aider committed changes", commit=coder.last_aider_commit_hash)
                 success = True
                 break
 
         # If we exhausted iterations without success, success remains False (req 2.7)
 
     except Exception as exc:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+        log.info("Aider exception", error=str(exc))
         os.chdir(original_dir)
-        output = captured.getvalue()
         return AiderResult(
             success=False,
             needs_clarification=False,
             clarification_question=None,
-            output=output + f"\nException: {exc}",
+            output=f"Exception: {exc}",
         )
     finally:
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
         os.chdir(original_dir)
 
-    output = captured.getvalue()
+    output = "\n".join(output_lines)
 
     # Final clarification check on full output (in case it appeared in last iteration)
     needs_clarification, question = _detect_clarification(output)
