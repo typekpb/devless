@@ -20,7 +20,7 @@ def _enable_auto_merge(pr) -> None:
     except Exception:
         # PyGithub may not support enable_automerge; fall back to GraphQL
         try:
-            gh = pr._requester
+            requester = pr._requester
             mutation = """
                 mutation($prId: ID!) {
                     enablePullRequestAutoMerge(input: {pullRequestId: $prId, mergeMethod: SQUASH}) {
@@ -28,12 +28,12 @@ def _enable_auto_merge(pr) -> None:
                     }
                 }
             """
-            gh.requester.requestJsonAndCheck(
+            requester.requestJsonAndCheck(
                 "POST", "/graphql",
                 input={"query": mutation, "variables": {"prId": pr.node_id}},
             )
         except Exception as exc:
-            log.warning("Could not enable auto-merge (repo may not support it)", error=str(exc))
+            log.info("Could not enable auto-merge (repo may not support it)", error=str(exc))
 
 
 def build_pr_body(issue_number: int, issue_title: str) -> str:
