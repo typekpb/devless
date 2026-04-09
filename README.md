@@ -98,6 +98,10 @@ cp terraform.tfvars.example terraform.tfvars
 # Save your GitHub App private key PEM file:
 # pbpaste > github-app-private-key.pem   (or copy it however you prefer)
 
+# Build Lambda functions
+./modules/lambda/build.sh
+
+# Deploy
 export TF_VAR_github_app_private_key="$(cat github-app-private-key.pem)"
 terraform init
 terraform apply
@@ -146,20 +150,26 @@ aws s3 mb s3://devless-tf-state --region eu-central-1
 2. Create `terraform/terraform.tfvars` from the example:
 
 ```bash
+cd terraform
 cp terraform.tfvars.example terraform.tfvars
 # Edit terraform.tfvars with your values
 ```
 
-3. Deploy infrastructure:
+3. Build Lambda functions:
 
 ```bash
-cd terraform
+./modules/lambda/build.sh
+```
+
+4. Deploy infrastructure:
+
+```bash
 export TF_VAR_github_app_private_key="$(cat github-app-private-key.pem)"
 terraform init
 terraform apply
 ```
 
-4. Build and push the orchestrator image:
+5. Build and push the orchestrator image:
 
 ```bash
 ECR_URL=$(terraform output -raw ecr_repository_url)
@@ -171,7 +181,7 @@ docker build -t "$ECR_URL:latest" ../orchestrator/
 docker push "$ECR_URL:latest"
 ```
 
-5. Trigger ECS redeployment:
+6. Trigger ECS redeployment:
 
 ```bash
 aws ecs update-service \
@@ -181,7 +191,7 @@ aws ecs update-service \
   --region eu-central-1
 ```
 
-Repeat steps 3–5 for every change.
+Repeat steps 4–6 for every change.
 
 ---
 

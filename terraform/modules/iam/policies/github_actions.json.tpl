@@ -34,8 +34,7 @@
       "Effect": "Allow",
       "Action": ["ecr:*"],
       "Resource": [
-        "${ecr_repository_arn}",
-        "${ecr_repository_bash_arn}"
+        "arn:aws:ecr:${region}:${account_id}:repository/${project_name}-*"
       ]
     },
     {

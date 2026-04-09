@@ -11,12 +11,15 @@ variable "sqs_queue_arn" {
 }
 
 variable "ecr_repository_arn" {
-  type = string
+  type        = string
+  description = "ARN of the orchestrator ECR repository (unused, kept for compatibility)"
+  default     = ""
 }
 
 variable "ecr_repository_bash_arn" {
   type        = string
-  description = "ARN of the orchestrator-bash ECR repository"
+  description = "ARN of the orchestrator-bash ECR repository (unused, kept for compatibility)"
+  default     = ""
 }
 
 variable "param_arns" {
