@@ -140,7 +140,9 @@ def _process_ci_fix(
             f"The CI pipeline failed on branch `{branch}`.\n\n"
             f"{payload.issue_body}\n\n"
             f"Please analyze the failure, fix the code, and make sure "
-            f"the test command `{devless_cfg.test_command}` passes."
+            f"the test command `{devless_cfg.test_command}` passes.\n\n"
+            f"## Commit Message Guidelines\n\n"
+            f"Use this format: `fix: <description>\\n\\nCloses #{payload.issue_number}`"
         )
 
         try:

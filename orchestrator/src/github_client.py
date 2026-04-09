@@ -32,10 +32,21 @@ def fetch_issue_comments(payload: TaskPayload, token: str) -> str:
 def build_issue_message(payload: TaskPayload, token: str) -> str:
     """Build the full Aider prompt from issue title, body, and comments."""
     comments_text = fetch_issue_comments(payload, token)
+    commit_instructions = (
+        f"\n\n## Commit Message Guidelines\n\n"
+        f"When committing changes, use this format for commit messages:\n"
+        f"```\n"
+        f"<type>: <description>\n\n"
+        f"Closes #{payload.issue_number}\n"
+        f"```\n"
+        f"Where <type> is one of: feat, fix, docs, style, refactor, test, chore\n"
+        f"The 'Closes #{payload.issue_number}' line is required to auto-close the issue when the PR is merged."
+    )
     return (
         f"Issue #{payload.issue_number}: {payload.issue_title}\n\n"
         f"{payload.issue_body}\n"
         f"{comments_text}"
+        f"{commit_instructions}"
     )
 
 
