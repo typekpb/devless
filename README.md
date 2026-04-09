@@ -12,7 +12,6 @@ own branches. PRs auto-merge after passing review and checks.
 
 Events handled:
 - `issues` / `issue_comment` → full pipeline (clone → Aider → PR)
-- `check_run` / `workflow_run` (failure on `issue-N` branches) → CI fix pipeline (checkout → Aider fix → push)
 - `pull_request_review_comment` / `pull_request_review` → PR feedback pipeline (checkout → Aider changes → push to same PR)
 
 ## How it works end-to-end
@@ -47,22 +46,6 @@ sequenceDiagram
     deactivate Aider
     Orch->>GH: open PR
     deactivate Orch
-
-    loop CI fails on issue-N branch
-        GH->>WH: check_run/workflow_run failure
-        activate WH
-        WH->>SQS: enqueue ci_fix task
-        deactivate WH
-        SQS->>Orch: deliver message
-        activate Orch
-        Orch->>GH: checkout branch
-        Orch->>Aider: fix code
-        activate Aider
-        Aider-->>Orch: result
-        deactivate Aider
-        Orch->>GH: push fix
-        deactivate Orch
-    end
 
     Dev->>GH: review & approve
     GH->>GH: auto-merge
@@ -349,7 +332,7 @@ In the target repo, go to Settings → Webhooks → Add webhook:
 | Payload URL | your API Gateway URL (`terraform output api_gateway_url`) |
 | Content type | `application/json` |
 | Secret | your webhook HMAC secret (`terraform output -raw webhook_secret`) |
-| Events | select "Let me select individual events" → check `Issues`, `Issue comments`, `Check runs`, `Workflow runs`, `Pull request review comments`, `Pull request reviews` |
+| Events | select "Let me select individual events" → check `Issues`, `Issue comments`, `Pull request review comments`, `Pull request reviews` |
 | Active | checked |
 
 Click "Add webhook". This is a one-time step per target repo.
@@ -357,8 +340,8 @@ Click "Add webhook". This is a one-time step per target repo.
 > **Updating existing webhooks:** If you already have a webhook configured, go to
 > Settings → Webhooks → click on your webhook → scroll to "Which events would you
 > like to trigger this webhook?" → ensure all required events are checked:
-> `Issues`, `Issue comments`, `Check runs`, `Workflow runs`, `Pull request review comments`,
-> `Pull request reviews`. This enables automatic CI failure detection, fixes, and PR feedback handling.
+> `Issues`, `Issue comments`, `Pull request review comments`,
+> `Pull request reviews`.
 
 ### Optional: project config
 
@@ -431,7 +414,7 @@ your-project/
 ```
 
 Then open an issue — Devless picks it up, posts status comments, opens a PR,
-auto-fixes CI failures, and auto-merges after approval.
+and auto-merges after approval.
 
 ---
 

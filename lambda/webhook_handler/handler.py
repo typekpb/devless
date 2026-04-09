@@ -7,6 +7,7 @@ import json
 import logging
 import os
 import re
+from datetime import datetime, timezone
 
 import boto3
 
@@ -37,13 +38,8 @@ def _build_issue_message(event: dict) -> dict | None:
 
     # Check if this is a comment on a PR (PRs have a pull_request key in the issue object)
     is_pr_comment = "pull_request" in issue and "comment" in event
-    
+
     if is_pr_comment:
-        # This is a comment on a PR - check if it's a Devless-managed branch
-        # We need to extract the branch from the PR
-        pr_url = issue.get("pull_request", {}).get("url", "")
-        # The branch info isn't in the issue_comment event, so we'll mark it
-        # and let the orchestrator fetch the PR details
         msg_event_type = "pr_issue_comment"
         body = comment.get("body", "")
     elif "comment" in event:
@@ -52,8 +48,6 @@ def _build_issue_message(event: dict) -> dict | None:
     else:
         msg_event_type = "issues"
         body = issue.get("body", "") or ""
-
-    from datetime import datetime, timezone
 
     return {
         "event_type": msg_event_type,
@@ -67,37 +61,22 @@ def _build_issue_message(event: dict) -> dict | None:
 
 
 def _build_pr_comment_message(event: dict) -> dict | None:
-    """Build SQS message from a PR comment or review comment.
-
-    Extracts the issue number from the PR branch name (issue-N pattern).
-    Returns None if not a Devless-managed PR.
-    """
+    """Build SQS message from a PR review comment. Returns None if not Devless-managed."""
     pull_request = event.get("pull_request", {})
     comment = event.get("comment", {})
     repository = event.get("repository", {})
     sender = event.get("sender", {})
 
-    # Get branch name from PR
     head_branch = pull_request.get("head", {}).get("ref", "")
-    if not head_branch:
-        return None
-
-    match = _DEVLESS_BRANCH_RE.match(head_branch)
+    match = _DEVLESS_BRANCH_RE.match(head_branch) if head_branch else None
     if not match:
-        logger.info("PR branch %s is not a Devless-managed branch", head_branch)
         return None
-
-    issue_number = int(match.group(1))
-    comment_body = comment.get("body", "")
-    pr_title = pull_request.get("title", "")
-
-    from datetime import datetime, timezone
 
     return {
         "event_type": "pr_comment",
-        "issue_number": issue_number,
-        "issue_title": pr_title,
-        "issue_body": comment_body,
+        "issue_number": int(match.group(1)),
+        "issue_title": pull_request.get("title", ""),
+        "issue_body": comment.get("body", ""),
         "repository_full_name": repository.get("full_name", ""),
         "sender_login": sender.get("login", ""),
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -106,140 +85,25 @@ def _build_pr_comment_message(event: dict) -> dict | None:
 
 
 def _build_pr_review_message(event: dict) -> dict | None:
-    """Build SQS message from a PR review submission.
-
-    Extracts the issue number from the PR branch name (issue-N pattern).
-    Returns None if not a Devless-managed PR.
-    """
+    """Build SQS message from a PR review. Returns None if not Devless-managed."""
     pull_request = event.get("pull_request", {})
     review = event.get("review", {})
     repository = event.get("repository", {})
     sender = event.get("sender", {})
 
-    # Get branch name from PR
     head_branch = pull_request.get("head", {}).get("ref", "")
-    if not head_branch:
-        return None
-
-    match = _DEVLESS_BRANCH_RE.match(head_branch)
+    match = _DEVLESS_BRANCH_RE.match(head_branch) if head_branch else None
     if not match:
-        logger.info("PR branch %s is not a Devless-managed branch", head_branch)
         return None
 
-    issue_number = int(match.group(1))
-    review_body = review.get("body", "")
-    review_state = review.get("state", "")  # commented, approved, changes_requested
-    pr_title = pull_request.get("title", "")
-
-    from datetime import datetime, timezone
-
+    review_state = review.get("state", "")
     return {
         "event_type": "pr_review",
-        "issue_number": issue_number,
-        "issue_title": pr_title,
-        "issue_body": f"Review ({review_state}): {review_body}",
+        "issue_number": int(match.group(1)),
+        "issue_title": pull_request.get("title", ""),
+        "issue_body": f"Review ({review_state}): {review.get('body', '')}",
         "repository_full_name": repository.get("full_name", ""),
         "sender_login": sender.get("login", ""),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "branch": head_branch,
-    }
-
-
-def _build_ci_fix_message(event: dict) -> dict | None:
-    """Build SQS message from a check_run failure on a Devless branch.
-
-    Returns None if the event is not a completed failure on an issue-N branch.
-    """
-    check_run = event.get("check_run", {})
-    if check_run.get("conclusion") not in ("failure", "timed_out"):
-        return None
-
-    # Only process check runs on branches created by the orchestrator
-    head_branch = ""
-    
-    # Try to get branch from pull_requests first
-    for pr in check_run.get("pull_requests", []):
-        head_branch = pr.get("head", {}).get("ref", "")
-        if head_branch:
-            break
-
-    # Fallback: try to get branch from check_suite
-    if not head_branch:
-        check_suite = check_run.get("check_suite", {})
-        head_branch = check_suite.get("head_branch", "")
-
-    if not head_branch:
-        logger.info("Could not determine branch from check_run event")
-        return None
-
-    match = _DEVLESS_BRANCH_RE.match(head_branch)
-    if not match:
-        logger.info("Branch %s is not a Devless-managed branch", head_branch)
-        return None  # not a Devless-managed branch
-
-    issue_number = int(match.group(1))
-    repository = event.get("repository", {})
-    output = check_run.get("output", {})
-    summary = output.get("summary", "") or output.get("text", "") or ""
-    check_name = check_run.get("name", "CI")
-
-    from datetime import datetime, timezone
-
-    return {
-        "event_type": "ci_fix",
-        "issue_number": issue_number,
-        "issue_title": f"CI fix: {check_name} failed on {head_branch}",
-        "issue_body": (
-            f"The check `{check_name}` failed on branch `{head_branch}`.\n\n"
-            f"## Failure details\n\n{summary[:3000]}"
-        ),
-        "repository_full_name": repository.get("full_name", ""),
-        "sender_login": "github-actions",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "branch": head_branch,
-    }
-
-
-def _build_workflow_run_fix_message(event: dict) -> dict | None:
-    """Build SQS message from a workflow_run failure on a Devless branch.
-
-    Returns None if the event is not a completed failure on an issue-N branch.
-    """
-    workflow_run = event.get("workflow_run", {})
-    
-    # Only process completed failures
-    if workflow_run.get("status") != "completed":
-        return None
-    if workflow_run.get("conclusion") not in ("failure", "timed_out"):
-        return None
-
-    head_branch = workflow_run.get("head_branch", "")
-    if not head_branch:
-        return None
-
-    match = _DEVLESS_BRANCH_RE.match(head_branch)
-    if not match:
-        logger.info("Branch %s is not a Devless-managed branch", head_branch)
-        return None
-
-    issue_number = int(match.group(1))
-    repository = event.get("repository", {})
-    workflow_name = workflow_run.get("name", "CI")
-    html_url = workflow_run.get("html_url", "")
-
-    from datetime import datetime, timezone
-
-    return {
-        "event_type": "ci_fix",
-        "issue_number": issue_number,
-        "issue_title": f"CI fix: {workflow_name} failed on {head_branch}",
-        "issue_body": (
-            f"The workflow `{workflow_name}` failed on branch `{head_branch}`.\n\n"
-            f"[View workflow run]({html_url})\n\n"
-            f"Please analyze the failure and fix the code."
-        ),
-        "repository_full_name": repository.get("full_name", ""),
-        "sender_login": "github-actions",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "branch": head_branch,
     }
@@ -263,31 +127,27 @@ def lambda_handler(event: dict, context) -> dict:
         logger.error("Failed to parse webhook body as JSON")
         return {"statusCode": 400, "body": json.dumps({"error": "Bad Request"})}
 
-    # Determine event type from GitHub header
     gh_event = headers.get("x-github-event", "")
 
-    # Ignore events from bots (e.g. our own GitHub App posting comments)
+    # Ignore bots
     sender = github_payload.get("sender", {})
-    if sender.get("type") == "Bot":
-        logger.info("Ignoring event from bot: %s", sender.get("login", ""))
+    sender_login = sender.get("login", "")
+    if sender.get("type") == "Bot" or sender_login.endswith("[bot]"):
+        logger.info("Ignoring event from bot: %s", sender_login)
         return {"statusCode": 200, "body": json.dumps({"status": "ignored"})}
 
+    # Route to appropriate handler
     sqs_message = None
-    if gh_event == "check_run":
-        sqs_message = _build_ci_fix_message(github_payload)
-    elif gh_event == "workflow_run":
-        sqs_message = _build_workflow_run_fix_message(github_payload)
-    elif gh_event == "pull_request_review_comment":
+    if gh_event == "pull_request_review_comment":
         sqs_message = _build_pr_comment_message(github_payload)
     elif gh_event == "pull_request_review":
-        # Handle review comments (when someone submits a review with comments)
         if github_payload.get("review", {}).get("body"):
             sqs_message = _build_pr_review_message(github_payload)
     elif gh_event in ("issues", "issue_comment"):
         sqs_message = _build_issue_message(github_payload)
 
     if sqs_message is None:
-        logger.info("Event ignored (not actionable): %s", gh_event)
+        logger.info("Event ignored: %s", gh_event)
         return {"statusCode": 200, "body": json.dumps({"status": "ignored"})}
 
     queue_url = os.environ["SQS_QUEUE_URL"]
