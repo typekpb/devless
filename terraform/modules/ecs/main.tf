@@ -168,3 +168,71 @@ resource "aws_cloudwatch_metric_alarm" "sqs_messages_zero" {
     QueueName = var.sqs_queue_name
   }
 }
+
+
+# --- Orchestrator Bash (alternative TypeScript/just-bash implementation) ---
+
+resource "aws_cloudwatch_log_group" "orchestrator_bash" {
+  name              = "/ecs/${var.project_name}-orchestrator-bash"
+  retention_in_days = 30
+}
+
+resource "aws_ecs_task_definition" "orchestrator_bash" {
+  family                   = "${var.project_name}-orchestrator-bash"
+  requires_compatibilities = ["FARGATE"]
+  network_mode             = "awsvpc"
+  cpu                      = "1024"
+  memory                   = "2048"
+  execution_role_arn       = var.execution_role_arn
+  task_role_arn            = var.task_role_arn
+
+  container_definitions = jsonencode([{
+    name      = "orchestrator-bash"
+    image     = "${var.ecr_repository_bash_url}:${var.ecr_image_tag}"
+    essential = true
+
+    environment = [
+      { name = "SQS_QUEUE_URL", value = var.sqs_queue_url },
+      { name = "S3_BUCKET", value = var.s3_bucket_name },
+      { name = "AWS_REGION", value = data.aws_region.current.name },
+    ]
+
+    secrets = concat(
+      [
+        { name = "GITHUB_APP_ID", valueFrom = var.github_app_id_param_arn },
+        { name = "GITHUB_APP_PRIVATE_KEY", valueFrom = var.github_app_private_key_param_arn },
+        { name = "GITHUB_APP_INSTALLATION_ID", valueFrom = var.github_app_installation_id_param_arn },
+      ],
+      var.openai_api_key_param_arn != "" ? [{ name = "OPENAI_API_KEY", valueFrom = var.openai_api_key_param_arn }] : [],
+    )
+
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        "awslogs-group"         = aws_cloudwatch_log_group.orchestrator_bash.name
+        "awslogs-region"        = data.aws_region.current.name
+        "awslogs-stream-prefix" = "ecs"
+      }
+    }
+
+    stopTimeout = 120
+  }])
+}
+
+resource "aws_ecs_service" "orchestrator_bash" {
+  name            = "${var.project_name}-orchestrator-bash"
+  cluster         = aws_ecs_cluster.main.id
+  task_definition = aws_ecs_task_definition.orchestrator_bash.arn
+  desired_count   = 0  # Disabled by default, enable manually to switch from Python orchestrator
+  launch_type     = "FARGATE"
+
+  network_configuration {
+    subnets          = var.subnet_ids
+    security_groups  = [aws_security_group.orchestrator.id]
+    assign_public_ip = true
+  }
+
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
+}

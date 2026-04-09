@@ -6,6 +6,11 @@ variable "ecr_repository_url" {
   type = string
 }
 
+variable "ecr_repository_bash_url" {
+  type        = string
+  description = "ECR repository URL for orchestrator-bash"
+}
+
 variable "ecr_image_tag" {
   type    = string
   default = "latest"

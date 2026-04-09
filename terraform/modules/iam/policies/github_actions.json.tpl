@@ -33,7 +33,10 @@
       "Sid": "ECR",
       "Effect": "Allow",
       "Action": ["ecr:*"],
-      "Resource": "${ecr_repository_arn}"
+      "Resource": [
+        "${ecr_repository_arn}",
+        "${ecr_repository_bash_arn}"
+      ]
     },
     {
       "Sid": "ECRAuth",

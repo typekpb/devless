@@ -32,10 +32,11 @@ resource "aws_iam_role_policy" "github_actions" {
   role = aws_iam_role.github_actions.id
 
   policy = templatefile("${path.module}/policies/github_actions.json.tpl", {
-    project_name       = var.project_name
-    region             = data.aws_region.current.name
-    account_id         = data.aws_caller_identity.current.account_id
-    ecr_repository_arn = var.ecr_repository_arn
-    s3_bucket_arn      = var.s3_bucket_arn
+    project_name            = var.project_name
+    region                  = data.aws_region.current.name
+    account_id              = data.aws_caller_identity.current.account_id
+    ecr_repository_arn      = var.ecr_repository_arn
+    ecr_repository_bash_arn = var.ecr_repository_bash_arn
+    s3_bucket_arn           = var.s3_bucket_arn
   })
 }

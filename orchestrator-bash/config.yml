@@ -1,0 +1,11 @@
+# Orchestrator-bash configuration
+
+# Model for the AI agent (Bedrock model ID, without bedrock/ prefix)
+# Haiku is cheaper, Sonnet is smarter
+model: anthropic.claude-3-haiku-20240307-v1:0
+
+# Maximum agent steps (tool calls) before stopping
+max_steps: 20
+
+# Polling interval for SQS (seconds)
+poll_interval: 10

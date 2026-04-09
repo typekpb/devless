@@ -1,8 +1,13 @@
 # Devless — Infrastructure
 
-Automated coding agent that picks up GitHub issues, generates code changes with
-Aider, and opens Pull Requests. Automatically fixes CI failures on its
-own branches. PRs auto-merge after passing review and checks.
+Automated coding agent that picks up GitHub issues, generates code changes, and opens Pull Requests. PRs auto-merge after passing review and checks.
+
+## Orchestrator Implementations
+
+| Implementation | Stack | Description |
+|---|---|---|
+| [orchestrator/](orchestrator/) | Python + Aider | Main implementation with state machine pipeline |
+| [orchestrator-bash/](orchestrator-bash/) | TypeScript + Vercel AI SDK + just-bash | Alternative with skills-based approach |
 
 ## Architecture
 
@@ -11,8 +16,8 @@ own branches. PRs auto-merge after passing review and checks.
 > To edit: open [`docs/architecture.drawio`](docs/architecture.drawio) in [draw.io](https://app.diagrams.net), then export as `architecture.drawio.svg` to update the rendered diagram.
 
 Events handled:
-- `issues` / `issue_comment` → full pipeline (clone → Aider → PR)
-- `pull_request_review_comment` / `pull_request_review` → PR feedback pipeline (checkout → Aider changes → push to same PR)
+- `issues` / `issue_comment` → full pipeline (clone → code → PR)
+- `pull_request_review_comment` / `pull_request_review` → PR feedback pipeline (checkout → changes → push to same PR)
 
 ## How it works end-to-end
 

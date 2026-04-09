@@ -14,6 +14,11 @@ variable "ecr_repository_arn" {
   type = string
 }
 
+variable "ecr_repository_bash_arn" {
+  type        = string
+  description = "ARN of the orchestrator-bash ECR repository"
+}
+
 variable "param_arns" {
   description = "ARNs of all SSM parameters (secrets + config)"
   type        = list(string)
