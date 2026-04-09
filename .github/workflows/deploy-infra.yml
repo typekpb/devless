@@ -13,6 +13,7 @@ permissions:
   contents: read
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   AWS_REGION: ${{ secrets.AWS_REGION }}
   TF_VAR_github_app_id: ${{ secrets.TF_VAR_github_app_id }}
   TF_VAR_github_app_private_key: ${{ secrets.TF_VAR_github_app_private_key }}
@@ -29,7 +30,7 @@ jobs:
       run:
         working-directory: terraform
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: aws-actions/configure-aws-credentials@v4
         with:
