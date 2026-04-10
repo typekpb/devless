@@ -1,0 +1,33 @@
+@startuml agent-flow
+!theme plain
+skinparam backgroundColor white
+skinparam componentStyle rectangle
+
+package "Orchestrator" {
+    [main.py\nSQS polling] as main
+    [Strands Agent\nSYSTEM.md + skills] as agent
+}
+
+package "Tools" {
+    [github.py\nissues, PRs, comments] as github
+    [git.py\nclone, branch, push] as git
+    [code.py\nrun_aider, read files] as code
+}
+
+database "SQS Queue" as SQS
+database "GitHub API" as GH
+database "Git Repo" as Repo
+component "Aider" as Aider
+
+SQS --> main
+main --> agent : invoke
+main --> github : init with secrets
+main --> git : init with secrets
+main --> code : init with secrets
+agent --> github : tool calls
+agent --> git : tool calls
+agent --> code : tool calls
+github --> GH
+git --> Repo
+code --> Aider
+@enduml

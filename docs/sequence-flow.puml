@@ -1,0 +1,37 @@
+@startuml sequence-flow
+!theme plain
+skinparam backgroundColor white
+skinparam sequenceMessageAlign center
+
+actor Dev
+participant "GitHub" as GH
+participant "Webhook\nHandler" as WH
+participant "SQS" as SQS
+participant "Orchestrator" as Orch
+participant "Aider" as Aider
+
+alt new issue
+    Dev -> GH: open issue
+else comment on issue
+    Dev -> GH: comment on issue
+end
+
+GH -> WH: webhook event
+activate WH
+WH -> WH: validate HMAC
+WH -> SQS: enqueue task
+deactivate WH
+
+SQS -> Orch: deliver message
+activate Orch
+Orch -> GH: clone repo
+Orch -> Aider: generate code
+activate Aider
+Aider --> Orch: result
+deactivate Aider
+Orch -> GH: open PR
+deactivate Orch
+
+Dev -> GH: review & approve
+GH -> GH: auto-merge
+@enduml

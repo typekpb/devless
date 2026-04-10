@@ -1,0 +1,53 @@
+name: Render Docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/*.puml'
+      - 'presentation/slides.md'
+      - '.github/workflows/render-docs.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java (for PlantUML)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install PlantUML
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y plantuml
+
+      - name: Render PlantUML diagrams
+        run: |
+          cd docs
+          for puml in *.puml; do
+            echo "Rendering $puml..."
+            plantuml -tsvg "$puml"
+          done
+
+      - name: Install Marp CLI
+        run: npm install -g @marp-team/marp-cli
+
+      - name: Render slides to PDF
+        run: |
+          cd presentation
+          marp slides.md --pdf --allow-local-files -o slides.pdf
+
+      - name: Commit rendered files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/*.svg presentation/slides.pdf
+          git diff --staged --quiet || git commit -m "chore: render diagrams and slides [skip ci]"
+          git push

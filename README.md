@@ -21,55 +21,15 @@ Events handled:
 
 ## How it works end-to-end
 
-```mermaid
-sequenceDiagram
-    actor Dev
-    participant GH as GitHub
-    participant WH as Webhook Handler (AWS)
-    participant SQS as SQS (AWS)
-    participant Orch as Orchestrator (AWS)
-    participant Aider as Aider (AWS)
+![Sequence Flow](docs/sequence-flow.svg)
 
-    alt new issue
-        Dev->>GH: open issue
-    else comment on issue
-        Dev->>GH: comment on issue
-    end
+### Orchestrator pipeline (State Machine)
 
-    GH->>WH: webhook event
-    activate WH
-    WH->>WH: validate HMAC
-    WH->>SQS: enqueue task
-    deactivate WH
+![State Machine](docs/state-machine.svg)
 
-    SQS->>Orch: deliver message
-    activate Orch
-    Orch->>GH: clone repo
-    Orch->>Aider: generate code
-    activate Aider
-    Aider-->>Orch: result
-    deactivate Aider
-    Orch->>GH: open PR
-    deactivate Orch
+### Orchestrator pipeline (Agent-based)
 
-    Dev->>GH: review & approve
-    GH->>GH: auto-merge
-```
-
-### Orchestrator pipeline (Aider state machine)
-
-```mermaid
-stateDiagram-v2
-    [*] --> pending
-    pending --> cloned : git clone + create branch
-    cloned --> agent_loop : load config, fetch comments, run Aider
-    agent_loop --> [*] : Aider needs clarification
-    cloned --> pending : clone failure (reset)
-    agent_loop --> pr_created : git push + open/update PR
-    pr_created --> complete : post success comment
-    agent_loop --> pending : Aider failure (reset)
-    complete --> [*]
-```
+![Agent Flow](docs/agent-flow.svg)
 
 ---
 
@@ -197,36 +157,7 @@ Repeat steps 4–6 for every change.
 
 ## LLM backend configuration
 
-```mermaid
-graph LR
-    subgraph Orchestrator
-        Pipeline[Pipeline Runner] --> Core[Aider Core]
-        Core --> Router{Model Router}
-        Config[.devless/config.yml] -.->|model| Router
-    end
-
-    subgraph Bedrock[Amazon Bedrock - default]
-        BR[Claude Sonnet]
-        BR_auth[Auth: IAM task role]
-    end
-
-    subgraph OpenAI[OpenAI API]
-        OAI[GPT-4o, o3]
-        OAI_auth[Auth: OPENAI_API_KEY]
-    end
-
-    subgraph Azure[Azure OpenAI]
-        AZ[GPT-4o]
-        AZ_auth[Auth: AZURE_API_KEY]
-    end
-
-    Router -->|bedrock| BR
-    Router -->|openai| OAI
-    Router -->|azure| AZ
-```
-
-Each target repo chooses its LLM backend via `.devless/config.yml`. The
-orchestrator supports three providers. Only one needs to be configured.
+The orchestrator uses Amazon Bedrock by default. Configure via `.devless/config.yml` in target repos.
 
 ---
 

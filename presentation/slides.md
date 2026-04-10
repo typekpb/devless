@@ -2,29 +2,22 @@
 marp: true
 theme: default
 paginate: true
-backgroundColor: #1a1a2e
-color: #eaeaea
 style: |
   section {
     font-family: 'Segoe UI', sans-serif;
   }
   h1, h2 {
-    color: #00d4ff;
+    color: #0066cc;
   }
   code {
-    background: #16213e;
-    color: #00d4ff;
+    background: #f0f0f0;
+    color: #333;
   }
   a {
-    color: #00d4ff;
+    color: #0066cc;
   }
   table {
-    font-size: 0.8em;
-  }
-  .columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    font-size: 0.7em;
   }
 ---
 
@@ -35,90 +28,121 @@ style: |
 
 ---
 
-# The Business Problem
+# The Problem
 
 ## What I wanted
 
-- **Technical PO capability** — create issues, get working code
-- **Scalable workforce** — handle multiple issues in parallel
-- **Review-ready PRs** — not just code dumps, but mergeable changes
-- **Feedback loop** — respond to PR comments, iterate
+- Create issues → get working code
+- Handle multiple issues in parallel
+- Review-ready PRs, not code dumps
+- Respond to PR comments, iterate
 
 ## The dream
 
-> Open an issue → AI implements it → PR opens → Review → Merge
-
-No context switching. No waiting. Just describe what you need.
+> Open issue → AI implements → PR opens → Review → Merge
 
 ---
 
-# Available Tools (3rd Party)
+# Available Tools
 
 | Tool | Status | Notes |
 |------|--------|-------|
-| **GitHub Copilot Workspace** | ❌ Discontinued | Sunset May 2025 |
-| **Sweep AI** | ❌ Pivoted | Now JetBrains autocomplete only |
-| **Devin** | ✅ Active | $500/mo, autonomous agent |
-| **SWE-agent** | ✅ Open source | Research project, DIY setup |
-| **CodeRabbit** | ✅ Active | PR review only, no code gen |
-| **Aider** | ✅ Open source | CLI tool, no GitHub integration |
+| **GitHub Copilot Agent** | ✅ Active | Zero setup, GitHub-only |
+| **Devin** | ✅ Active | $500/mo |
+| **SWE-agent** | ✅ Open source | DIY setup |
+| **Aider** | ✅ Open source | CLI, no GitHub integration |
 
-**Gap:** No open, affordable, issue-to-PR solution with AWS/Bedrock support.
+**Gap:** No open, affordable, issue-to-PR with AWS/Bedrock.
 
 ---
 
-# The Solution: Devless
+# Solution: Devless
 
-![Architecture](../docs/architecture.drawio.svg)
+![w:900](../docs/architecture.drawio.svg)
 
-**Flow:** Issue → Webhook → Lambda → SQS → Orchestrator → Aider/Bedrock → PR
-
----
-
-# Key Components
-
-## Webhook Handler (Lambda)
-- Validates GitHub HMAC signatures
-- Filters bot events (prevents loops!)
-- Routes: issues, PR comments, PR reviews
-
-## Orchestrator (ECS Fargate)
-- State machine: `pending → cloned → agent_loop → pr_created → complete`
-- Checkpoints to S3 (resume on failure)
-- Runs Aider with Bedrock backend
-
-## Aider Integration
-- Open source CLI tool for AI coding
-- Supports multiple LLM backends
-- Handles git operations, test runs, retries
+Issue → Webhook → SQS → Orchestrator → Aider → PR
 
 ---
 
-# State Machine
+# Two Orchestrator Approaches
 
-*(See sequence diagram in README.md)*
+## 1. State Machine (Original)
+- Python code controls flow
+- Explicit states: `pending → cloned → agent_loop → pr_created`
+- ~800 lines of code
 
-**States:** `pending → cloned → agent_loop → pr_created → complete`
-
-- **pending** — waiting to start
-- **cloned** — repo cloned, branch created
-- **agent_loop** — Aider generating code, running tests
-- **pr_created** — branch pushed, PR opened
-- **complete** — success comment posted
+## 2. Agent-based (Strands)
+- LLM decides flow via SKILL.md files
+- Tools for git/GitHub/code operations
+- ~400 lines of code
 
 ---
 
-# Demo Time
+# State Machine Approach
 
-## Live Demo
+![w:700](../docs/state-machine.svg)
 
-**Repository:** [github.com/typekpb/devless-demo](https://github.com/typekpb/devless-demo)
+**Pros:** Deterministic, easy to debug
+**Cons:** Rigid, code changes for new workflows
 
-**Deployed App:** [typekpb.github.io/devless-demo](https://typekpb.github.io/devless-demo)
+---
 
-### What we'll see:
-1. Open an issue describing a feature
-2. Devless picks it up, posts status
+# Agent-based Approach
+
+![w:700](../docs/agent-flow.svg)
+
+**Pros:** Flexible, edit SKILL.md for changes
+**Cons:** LLM behavior may vary
+
+---
+
+# Comparison: Two Approaches
+
+| Aspect | State Machine | Agent-based |
+|--------|--------------|-------------|
+| Control flow | Hardcoded Python | LLM via SKILL.md |
+| Lines of code | ~800 | ~400 |
+| Adding workflows | Code changes | Edit SKILL.md |
+| Error handling | try/except | Agent decides |
+| Predictability | ✅ Deterministic | ⚠️ May vary |
+| Flexibility | ⚠️ Rigid | ✅ Adapts |
+| Secrets | Hidden | Hidden in tools |
+
+---
+
+# Security: Secrets Handling
+
+## Both approaches hide secrets from LLM
+
+**State Machine:** Orchestrator holds token, never passes to Aider
+
+**Agent-based:** Tools initialized with token at startup
+- LLM calls `create_pr(title, body)` 
+- Tool internally uses token
+- Token never in LLM context
+
+---
+
+# vs GitHub Copilot Agent
+
+| Aspect | Devless | Copilot Agent |
+|--------|---------|---------------|
+| Setup | Terraform deploy | ✅ Zero |
+| Cost | ~$20/mo | GitHub sub |
+| LLM choice | Bedrock, OpenAI | GitHub only |
+| Customization | Full control | Limited |
+| Self-hosted | ✅ Yes | ❌ No |
+| Data residency | Your AWS | GitHub |
+| Maintenance | You | GitHub |
+
+---
+
+# Demo
+
+**Repo:** [github.com/typekpb/devless-demo](https://github.com/typekpb/devless-demo)
+
+1. Open issue describing feature
+2. Devless posts status comment
 3. PR opens with implementation
 4. Review, comment, iterate
 5. Merge
@@ -127,249 +151,65 @@ No context switching. No waiting. Just describe what you need.
 
 # Target Repo Setup
 
-Minimal config in `.devless/config.yml`:
-
+`.devless/config.yml`:
 ```yaml
 model: bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0
 test_command: npm test
-max_iterations: 10
 ```
 
-Webhook events needed:
-- `Issues`, `Issue comments`
-- `Pull request review comments`, `Pull request reviews`
+Webhook events: Issues, Issue comments, PR reviews
 
-That's it. No agents to install, no tokens in the repo.
+That's it. No agents to install.
 
 ---
 
-# Development Journey
-
-## Tools Used
-
-| Tool | Purpose | Cost |
-|------|---------|------|
-| **Kiro** | Specs + vibe coding | $20/mo subscription |
-| **Bedrock** | LLM backend (Claude) | AWS sandbox (free for us) |
-| **Aider** | Code generation engine | Open source |
-| **Terraform** | Infrastructure | Open source |
-
-## Why Kiro?
-- Spec-driven development worked well for architecture
-- "Vibe coding" for rapid iteration
-- Free tier credits ran out fast → subscription needed
-
----
-
-# Why Bedrock?
-
-## Advantages
-- **AWS sandbox available** — no credit card, no approvals
-- **IAM authentication** — no API keys to manage
-- **Claude Sonnet 4** — excellent for code generation
-- **Regional endpoints** — EU data residency
-
-## Aider Integration
-```bash
-aider --model bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0
-```
-
-Just works. No OpenAI key needed.
-
----
-
-# Running Locally
-
-## Test Aider directly
-```bash
-cd /tmp && git clone https://github.com/typekpb/devless-demo.git
-cd devless-demo
-
-export AWS_REGION=eu-central-1
-aider --model bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0 \
-  --message "Add a dark mode toggle"
-```
-
-## Run the orchestrator
-```bash
-cd orchestrator
-pip install -e .
-export SQS_QUEUE_URL=... S3_BUCKET=... GITHUB_APP_ID=...
-python -m main
-```
-
-Polls SQS, processes issues exactly like ECS.
-
----
-
-# Lessons Learned
-
-## What Worked Well ✅
-
-- **Aider** — battle-tested, handles edge cases
-- **State machine** — clean separation, easy to debug
-- **Checkpoints** — resume after failures, no lost work
-- **GitHub App auth** — short-lived tokens, no PATs
-- **Bedrock** — zero config with IAM roles
-
-## What I'd Do Differently 🔄
-
-- Start with simpler event handling (disabled CI auto-fix)
-- More upfront time on prompt engineering
-- Consider LangGraph for complex workflows (future)
-
----
-
-# What I Didn't Have Time For
-
-- **OpenAI / Azure backends** — code is there, not tested
-- **Codex integration** — would be interesting to compare
-- **Multi-repo orchestration** — one repo at a time for now
-- **Cost optimization** — Bedrock pricing is fine, but could cache
-- **Better error messages** — Aider output can be cryptic
-
----
-
-# Architecture Diagram
-
-![Architecture](../docs/architecture.drawio.svg)
-
-*Editable source: `docs/architecture.drawio` — open in [draw.io](https://app.diagrams.net)*
-
----
-
-# Infrastructure (Terraform)
+# Infrastructure
 
 ```
 terraform/
-├── main.tf              # Root module
 ├── modules/
-│   ├── api_gateway/     # Webhook endpoint
-│   ├── lambda/          # Webhook handler
-│   ├── sqs/             # Task queue + DLQ
-│   ├── ecs/             # Orchestrator service
-│   ├── ecr/             # Container registry
-│   ├── iam/             # Roles & policies
-│   └── s3/              # Checkpoints
-└── terraform.tfvars     # Your config
+│   ├── api_gateway/   # Webhook endpoint
+│   ├── lambda/        # HMAC validation
+│   ├── sqs/           # Task queue
+│   ├── ecs/           # Orchestrator
+│   └── iam/           # Roles
 ```
 
 One `terraform apply` deploys everything.
 
 ---
 
-# Cost Breakdown (Estimate)
+# Cost (~$20/month)
 
-| Service | Usage | Cost/month |
-|---------|-------|------------|
-| Lambda | ~1000 invocations | ~$0 |
-| SQS | ~1000 messages | ~$0 |
-| ECS Fargate | 0.25 vCPU, 0.5GB | ~$10 |
-| Bedrock (Claude) | ~100 issues | ~$5-20 |
-| S3 | Checkpoints | ~$0 |
+| Service | Cost |
+|---------|------|
+| Lambda | ~$0 |
+| SQS | ~$0 |
+| ECS Fargate | ~$10 |
+| Bedrock | ~$10 |
 
-**Total:** ~$15-30/month for moderate usage
-
-*Sandbox account = $0 for us*
+*AWS sandbox = $0*
 
 ---
 
-# Alternative Architectures Explored
+# Lessons Learned
 
-## just-bash (WASM sandbox)
+## What worked ✅
+- Aider — battle-tested
+- GitHub App auth — no PATs
+- Bedrock — zero config with IAM
 
-| Aspect | Feasibility | Notes |
-|--------|-------------|-------|
-| GitHub API (curl) | ✅ Works | Issues, PRs, comments |
-| Read files (API) | ✅ Works | Base64 decode from Contents API |
-| Write files (API) | ✅ Works | One commit per file |
-| Run tests | ❌ No | No binaries (pytest, npm) |
-| Git clone | ❌ No | No git binary |
+## Key insight
 
-**Verdict:** Great for API-only workflows (triage, comments, simple file edits). Not viable when tests/builds needed.
+> State machines feel safe but become rigid.
+> Agent + tools = less code, same control.
 
----
-
-# Alternative: Docker Sandbox
-
-| Aspect | Original Orchestrator | Docker Sandbox | Docker + Auth Proxy |
-|--------|----------------------|----------------|---------------------|
-| Code complexity | ~800 lines | ~300 lines | ~300 lines + proxy |
-| Git/GitHub ops | Orchestrator handles | LLM via bash | LLM via bash |
-| Secret exposure | ✅ Hidden | ⚠️ Exposed | ✅ Hidden (proxy injects) |
-| Adding features | Code changes | Add SKILL.md | Add SKILL.md |
-| Test execution | Orchestrator runs | LLM runs | LLM runs |
-| Infra complexity | Python only | + Docker | + Docker + proxy |
-
-**Auth Proxy approach:** Network proxy intercepts requests, injects auth headers. Token never enters sandbox.
-
----
-
-# Security: Why Secrets Matter
-
-## Risks of LLM seeing secrets
-
-| Risk | Example | Impact |
-|------|---------|--------|
-| Accidental logging | LLM runs `env` or `echo $TOKEN` | Token in logs/output |
-| Prompt injection | Malicious issue body tricks LLM | Exfiltrate to attacker URL |
-| Training data | Token sent to LLM provider | Potential leak in future models |
-| Repo secrets | `.env` files in cloned repo | Exposed to LLM context |
-
-## Mitigations
-
-- **Original orchestrator:** Secrets never reach LLM ✅
-- **Docker + proxy:** Network-level auth injection ✅
-- **Docker (simple):** Accept risk, use short-lived scoped tokens ⚠️
-
----
-
-# Comparison: GitHub Copilot Coding Agent
-
-| Aspect | Devless | GitHub Copilot Agent |
-|--------|---------|---------------------|
-| Setup | Deploy infra (Terraform) | ✅ Zero setup |
-| Cost | ~$15-30/mo + Bedrock | GitHub subscription |
-| LLM choice | Any (Bedrock, OpenAI) | GitHub's models only |
-| Customization | Full control (skills, prompts) | Limited |
-| Self-hosted | ✅ Yes | ❌ No |
-| Data residency | Your AWS region | GitHub's infra |
-| Open source | ✅ Yes | ❌ No |
-
-**When to use Devless:** Need control, custom models, or data residency.
-**When to use Copilot:** Just want it to work, no infra to manage.
-
----
-
-# Future Ideas
-
-- **LangGraph / Instructor** — smarter routing based on issue content
-- **Multi-agent** — planner + coder + reviewer
-- **PR auto-merge** — after approval + CI pass
-- **Slack integration** — notifications, approvals
-- **Cost tracking** — per-issue token usage
-- **Fine-tuning** — on our codebase patterns
+**Recommendation:** Start with agent-based.
 
 ---
 
 # Q&A
 
-## Links
+**Devless:** [github.com/typekpb/devless](https://github.com/typekpb/devless)
 
-- **Devless repo:** [github.com/typekpb/devless](https://github.com/typekpb/devless)
-- **Demo repo:** [github.com/typekpb/devless-demo](https://github.com/typekpb/devless-demo)
-- **Live demo:** [typekpb.github.io/devless-demo](https://typekpb.github.io/devless-demo)
-- **Aider:** [aider.chat](https://aider.chat)
-- **Kiro:** [kiro.dev](https://kiro.dev)
-
----
-
-# Backup: Event Flow Detail
-
-*(Refer to sequence diagram in README.md for detailed flow)*
-
-**Summary:**
-1. GitHub Issue → API Gateway → Lambda (validate HMAC)
-2. Lambda → SQS (buffer, retry)
-3. ECS polls SQS → runs Aider with Bedrock
-4. Aider generates code → ECS pushes branch → opens PR
+**Demo:** [github.com/typekpb/devless-demo](https://github.com/typekpb/devless-demo)

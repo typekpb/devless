@@ -1,0 +1,26 @@
+@startuml state-machine
+!theme plain
+skinparam backgroundColor white
+skinparam state {
+    BackgroundColor #f0f0f0
+    BorderColor #333
+}
+
+[*] --> pending
+
+pending --> cloned : git clone +\ncreate branch
+
+cloned --> agent_loop : load config,\nfetch comments,\nrun Aider
+
+cloned --> pending : clone failure\n(reset)
+
+agent_loop --> [*] : Aider needs\nclarification
+
+agent_loop --> pr_created : git push +\nopen/update PR
+
+agent_loop --> pending : Aider failure\n(reset)
+
+pr_created --> complete : post success\ncomment
+
+complete --> [*]
+@enduml
