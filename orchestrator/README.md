@@ -6,38 +6,11 @@ Main orchestrator implementation with state machine pipeline.
 
 ## Architecture
 
-```mermaid
-graph TB
-    subgraph Pipeline["Pipeline Runner"]
-        SM[State Machine] --> Stages[Stages]
-        Stages --> Aider[Aider Runner]
-    end
-
-    subgraph External["External Services"]
-        GH[GitHub API]
-        SQS[AWS SQS]
-        S3[AWS S3]
-        Bedrock[AWS Bedrock]
-    end
-
-    SM --> GH
-    SM --> SQS
-    SM --> S3
-    Aider --> Bedrock
-```
+![State Machine](../docs/state-machine.svg)
 
 ## How it works
 
-```mermaid
-stateDiagram-v2
-    [*] --> pending
-    pending --> cloned : git clone + create branch
-    cloned --> agent_loop : load config, run Aider
-    agent_loop --> [*] : needs clarification
-    agent_loop --> pr_created : git push + open PR
-    pr_created --> complete : post success comment
-    complete --> [*]
-```
+![Sequence Flow](../docs/sequence-flow.svg)
 
 ## Structure
 

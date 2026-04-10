@@ -4,29 +4,7 @@ Strands-based agent orchestrator. The agent decides what to do based on SYSTEM.m
 
 ## Architecture
 
-```mermaid
-flowchart TB
-    subgraph Orchestrator
-        main[main.py<br/>SQS polling]
-        agent[Strands Agent<br/>SYSTEM.md + skills]
-    end
-    
-    subgraph Tools
-        github[github.py<br/>issues, PRs, comments]
-        git[git.py<br/>clone, branch, push]
-        code[code.py<br/>run_aider, read files]
-    end
-    
-    SQS[(SQS Queue)] --> main
-    main -->|init with secrets| Tools
-    main -->|invoke| agent
-    agent -->|tool calls| Tools
-    Tools -->|results only| agent
-    
-    github --> GitHub[(GitHub API)]
-    git --> Repo[(Git Repo)]
-    code --> Aider[Aider]
-```
+![Architecture](../docs/agent-flow.svg)
 
 ## Project Structure
 
