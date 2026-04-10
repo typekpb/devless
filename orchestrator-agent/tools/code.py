@@ -50,11 +50,13 @@ def run_aider(
     """Run Aider to make code changes based on the given instructions.
     
     Aider will analyze the codebase, make changes, and run tests to verify.
+    The test_command should include ALL verification steps (tests + build).
+    Aider will iterate until tests pass or max_reflections is reached.
     
     Args:
         message: Instructions for what code changes to make
-        test_command: Command to run tests (default: pytest)
-        max_iterations: Maximum attempts to make changes pass tests
+        test_command: Command to run tests AND build (e.g., "npm test && npm run build")
+        max_iterations: Maximum outer loop attempts (Aider has internal reflections too)
         model: LLM model to use for code generation
         
     Returns:
@@ -65,10 +67,10 @@ def run_aider(
         raise RuntimeError("Repository not cloned")
     
     original_dir = os.getcwd()
-    output_lines = []
     success = False
     needs_clarification = False
     clarification_question = None
+    last_output = ""
     
     try:
         os.chdir(repo_path)
@@ -76,24 +78,33 @@ def run_aider(
         io_obj = InputOutput(yes=True)
         model_obj = Model(model)
         
+        # Aider with auto_test will run test_command after each change
+        # and iterate up to max_reflections times to fix failures.
+        # It only commits when tests pass.
         coder = Coder.create(
             main_model=model_obj,
             io=io_obj,
             fnames=[],
             auto_test=True,
             test_cmd=test_command,
+            auto_commits=True,
+            max_reflections=20,  # Allow more iterations to fix test/build failures
         )
         
-        for i in range(max_iterations):
-            coder.run(message)
-            
-            # Check if Aider committed changes (success signal)
-            if coder.last_aider_commit_hash:
-                success = True
-                break
+        # Run Aider - it handles test iteration internally
+        coder.run(message)
         
-        # Check for clarification signals in output
-        output = "\n".join(output_lines)
+        # Capture any output for clarification detection
+        last_output = str(coder.io) if hasattr(coder, 'io') else ""
+        
+        # If Aider committed, tests passed (including build if in test_command)
+        if coder.last_aider_commit_hash:
+            success = True
+        else:
+            # Aider gave up - couldn't make tests/build pass within max_reflections
+            last_output = f"Aider could not complete the task. Tests or build failed after {20} reflection attempts.\n\n{last_output}"
+        
+        # Check for clarification signals
         clarification_phrases = [
             "I need clarification",
             "Could you clarify",
@@ -101,9 +112,9 @@ def run_aider(
             "need more information",
         ]
         for phrase in clarification_phrases:
-            if phrase.lower() in output.lower():
+            if phrase.lower() in last_output.lower():
                 needs_clarification = True
-                for line in output.splitlines():
+                for line in last_output.splitlines():
                     if phrase.lower() in line.lower():
                         clarification_question = line.strip()
                         break
@@ -123,7 +134,7 @@ def run_aider(
         "success": success,
         "needs_clarification": needs_clarification,
         "clarification_question": clarification_question,
-        "output": "\n".join(output_lines)[-3000:] if output_lines else "Completed",
+        "output": last_output[-3000:] if last_output else "Completed",
     }
 
 

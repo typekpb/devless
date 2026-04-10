@@ -98,17 +98,18 @@ def run_aider(
 ) -> AiderResult:
     """Invoke Aider and return the result.
 
-    Runs Aider with the o3 model in non-interactive mode, enabling auto-test
-    with the provided test command. Skills are discovered automatically
-    from `.agents/skills/` in the workspace.
-    Wraps Aider's internal retry loop with an outer cap of ``max_iterations``.
+    Runs Aider with the specified model in non-interactive mode, enabling auto-test
+    with the provided test command. Aider will iterate internally up to max_reflections
+    times to fix failing tests/build before giving up.
 
     Args:
         workspace: Absolute path to the cloned repository directory.
         issue_message: The full prompt to send to Aider (issue title + body +
             comments).  Build with :func:`build_issue_message`.
         test_cmd: Shell command Aider runs after each edit to verify correctness.
-        max_iterations: Maximum number of outer aider loop iterations (default 10).
+            Should include both tests AND build (e.g., "npm test && npm run build").
+        max_iterations: Unused, kept for API compatibility. Aider uses max_reflections internally.
+        model: LLM model to use for code generation.
 
     Returns:
         An :class:`AiderResult` describing the outcome.
@@ -116,9 +117,9 @@ def run_aider(
     import logger as log
     log.info("run_aider called", workspace=workspace, model=model)
 
-    output_lines: list[str] = []
     original_dir = os.getcwd()
     success = False
+    last_output = ""
 
     try:
         # Change to workspace directory so Aider operates on the right repo
@@ -140,34 +141,26 @@ def run_aider(
             fnames=[],
             auto_test=True,
             test_cmd=test_cmd,
+            auto_commits=True,
+            max_reflections=20,  # Allow up to 20 iterations to fix test/build failures
         )
-        log.info("Aider coder created, starting iterations")
+        log.info("Aider coder created, running")
 
-        for i in range(max_iterations):
-            log.info("Aider iteration starting", iteration=i + 1, max=max_iterations)
-            coder.run(issue_message)
-            log.info("Aider iteration finished", iteration=i + 1, max=max_iterations)
+        # Run Aider - it handles test iteration internally via max_reflections
+        coder.run(issue_message)
+        log.info("Aider run finished")
 
-            # Check for clarification signal
-            current_output = "\n".join(output_lines)
-            needs_clarification, question = _detect_clarification(current_output)
-            if needs_clarification:
-                os.chdir(original_dir)
-                return AiderResult(
-                    success=False,
-                    needs_clarification=True,
-                    clarification_question=question,
-                    output=current_output,
-                )
+        # Capture output for clarification detection
+        last_output = str(coder.io) if hasattr(coder, 'io') else ""
 
-            # Req 2.5: task is done when Aider exits with zero status and tests pass.
-            # Aider signals completion via last_aider_commit_hash being set.
-            if coder.last_aider_commit_hash:
-                log.info("Aider committed changes", commit=coder.last_aider_commit_hash)
-                success = True
-                break
-
-        # If we exhausted iterations without success, success remains False (req 2.7)
+        # If Aider committed, tests passed (including build if in test_cmd)
+        if coder.last_aider_commit_hash:
+            log.info("Aider committed changes", commit=coder.last_aider_commit_hash)
+            success = True
+        else:
+            # Aider gave up - couldn't make tests/build pass within max_reflections
+            log.info("Aider gave up without committing")
+            last_output = f"Aider could not complete the task. Tests or build failed after 20 reflection attempts.\n\n{last_output}"
 
     except Exception as exc:
         log.info("Aider exception", error=str(exc))
@@ -181,21 +174,19 @@ def run_aider(
     finally:
         os.chdir(original_dir)
 
-    output = "\n".join(output_lines)
-
-    # Final clarification check on full output (in case it appeared in last iteration)
-    needs_clarification, question = _detect_clarification(output)
+    # Check for clarification signals in output
+    needs_clarification, question = _detect_clarification(last_output)
     if needs_clarification:
         return AiderResult(
             success=False,
             needs_clarification=True,
             clarification_question=question,
-            output=output,
+            output=last_output,
         )
 
     return AiderResult(
         success=success,
         needs_clarification=False,
         clarification_question=None,
-        output=output,
+        output=last_output,
     )
