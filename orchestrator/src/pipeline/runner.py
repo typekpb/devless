@@ -9,7 +9,7 @@ import logger as log
 from aider_runner import run_aider
 from checkpoint_store import read_checkpoint, delete_checkpoint
 from github_app import GitHubAppAuth
-from issue_manager import IssueNotifier, get_pr_branch
+from issue_manager import IssueNotifier, get_pr_branch, is_issue_closed
 from models import CheckpointState
 from pipeline.stages import TaskPipeline
 from repo_manager import clone_repo, load_devless_config, push_branch
@@ -47,6 +47,17 @@ def _process_issue(
     os.environ["OPENAI_API_KEY"] = openai_api_key
 
     log.info("Processing issue", issue_number=payload.issue_number, repo=payload.repository_full_name)
+
+    token = app_auth.token()
+
+    # Skip closed issues
+    if is_issue_closed(payload.repository_full_name, payload.issue_number, token):
+        log.info("Issue is closed, skipping", issue_number=payload.issue_number)
+        try:
+            delete_message(queue_url, msg.receipt_handle)
+        except Exception:
+            pass
+        return
 
     checkpoint = read_checkpoint(payload.issue_number, payload.repository_full_name, s3_bucket)
     if checkpoint:
@@ -124,6 +135,16 @@ def _process_ci_fix(
     log.info("Processing CI fix", issue_number=payload.issue_number, branch=branch)
 
     token = app_auth.token()
+
+    # Skip closed issues/PRs
+    if is_issue_closed(payload.repository_full_name, payload.issue_number, token):
+        log.info("Issue/PR is closed, skipping CI fix", issue_number=payload.issue_number)
+        try:
+            delete_message(queue_url, msg.receipt_handle)
+        except Exception:
+            pass
+        return
+
     notify = IssueNotifier(payload, token)
     notify.comment(
         f"🔄 CI failed on `{branch}`. Devless is analyzing the failure and pushing a fix."
@@ -202,6 +223,16 @@ def _process_pr_feedback(
     log.info("Processing PR feedback", issue_number=payload.issue_number, branch=branch)
 
     token = app_auth.token()
+
+    # Skip closed PRs
+    if is_issue_closed(payload.repository_full_name, payload.issue_number, token):
+        log.info("PR is closed, skipping feedback", issue_number=payload.issue_number)
+        try:
+            delete_message(queue_url, msg.receipt_handle)
+        except Exception:
+            pass
+        return
+
     notify = IssueNotifier(payload, token)
     notify.comment(
         f"📝 Devless received your feedback and is making changes to the PR."
@@ -275,6 +306,15 @@ def _process_pr_issue_comment(
     os.environ["OPENAI_API_KEY"] = openai_api_key
 
     token = app_auth.token()
+
+    # Skip closed PRs
+    if is_issue_closed(payload.repository_full_name, payload.issue_number, token):
+        log.info("PR is closed, skipping comment", issue_number=payload.issue_number)
+        try:
+            delete_message(queue_url, msg.receipt_handle)
+        except Exception:
+            pass
+        return
     
     # Fetch the PR to get the branch name
     branch = get_pr_branch(payload.repository_full_name, payload.issue_number, token)

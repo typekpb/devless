@@ -4,13 +4,30 @@ import os
 import signal
 import sys
 
+from github import Github
+
 from agent import create_agent, handle_issue, handle_pr_feedback
 from sqs_consumer import poll_message, delete_message, TaskPayload
 from github_app import get_github_auth
 
 
+def is_issue_closed(repo: str, issue_number: int, token: str) -> bool:
+    """Check if an issue or PR is closed."""
+    try:
+        gh = Github(token)
+        issue = gh.get_repo(repo).get_issue(issue_number)
+        return issue.state == "closed"
+    except Exception:
+        return False
+
+
 def process_task(payload: TaskPayload, github_token: str, agent) -> None:
     """Process a single task based on event type."""
+    
+    # Skip closed issues/PRs
+    if is_issue_closed(payload.repository_full_name, payload.issue_number, github_token):
+        print(f"==> Issue/PR #{payload.issue_number} is closed, skipping")
+        return
     
     if payload.event_type in ("issues", "issue_comment"):
         handle_issue(

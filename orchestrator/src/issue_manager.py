@@ -79,6 +79,18 @@ def get_pr_branch(repo_full_name: str, pr_number: int, token: str) -> str | None
         return None
 
 
+def is_issue_closed(repo_full_name: str, issue_number: int, token: str) -> bool:
+    """Check if an issue or PR is closed."""
+    try:
+        gh = Github(token)
+        repo = gh.get_repo(repo_full_name)
+        issue = repo.get_issue(issue_number)
+        return issue.state == "closed"
+    except Exception as exc:
+        log.warning("Failed to check issue state", error=str(exc))
+        return False
+
+
 class IssueNotifier:
     """Posts status comments on a GitHub issue/PR. Swallows failures."""
 
