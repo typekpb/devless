@@ -63,6 +63,16 @@ by Peter Butkovic (peter.butkovic@nordcloud.com)
 
 ---
 
+# Personal Motivation (gaining experience with...)
+
+- Kiro Spec coding mode
+- Deeper experience in Architectures built around AI
+- security + LLM
+- finding balance between LLM-based vs deterministic impl
+- SKILLS.md approach
+
+---
+
 # Available Tools
 
 | Tool | Status | Notes |
