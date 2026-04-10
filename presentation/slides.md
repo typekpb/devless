@@ -30,6 +30,8 @@ style: |
 
 *An army of AI workers at your service*
 
+⚠️ **This is a Proof of Concept** ⚠️
+
 ---
 
 # The Problem
@@ -55,7 +57,7 @@ style: |
 | **SWE-agent** | ❓ Not tested | DIY setup |
 | **Aider** | ✅ Used | CLI, no GitHub integration |
 
-**Gap:** No open, affordable, issue-to-PR with AWS/Bedrock.
+**Motivation for POC:** AWS/Bedrock self hosted solution. How hard is it?
 
 ---
 
@@ -182,16 +184,13 @@ One `terraform apply` deploys everything.
 
 ---
 
-# Cost (~$20/month)
+# Development Cost & Timeline
 
-| Service | Cost |
-|---------|------|
-| Lambda | ~$0 |
-| SQS | ~$0 |
-| ECS Fargate | ~$10 |
-| Bedrock | ~$10 |
-
-*AWS sandbox = $0*
+| Item | Value |
+|------|-------|
+| Kiro subscription | $20 |
+| AWS sandbox | $0 |
+| Kiro credits used | ~900 (free 50 ran out fast) |
 
 ---
 
