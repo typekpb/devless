@@ -1,11 +1,11 @@
-name: Deploy Orchestrator Bash
+name: Deploy Orchestrator Agent
 
 on:
   push:
     branches: [main]
     paths:
-      - 'orchestrator-bash/**'
-      - '.github/workflows/deploy-orchestrator-bash.yml'
+      - 'orchestrator-agent/**'
+      - '.github/workflows/deploy-orchestrator-agent.yml'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -37,7 +37,7 @@ jobs:
         id: ecr
         run: |
           ECR_URL=$(aws ecr describe-repositories \
-            --repository-names devless-orchestrator-bash \
+            --repository-names devless-orchestrator-agent \
             --query 'repositories[0].repositoryUri' \
             --output text)
           echo "url=${ECR_URL}" >> "$GITHUB_OUTPUT"
@@ -45,26 +45,17 @@ jobs:
       - name: Build and push (multi-arch)
         uses: docker/build-push-action@v6
         with:
-          context: orchestrator-bash/
+          context: orchestrator-agent/
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             ${{ steps.ecr.outputs.url }}:${{ github.sha }}
             ${{ steps.ecr.outputs.url }}:latest
 
-      - name: Force ECS redeployment (if service has desired_count > 0)
+      - name: Force ECS redeployment
         run: |
-          DESIRED=$(aws ecs describe-services \
+          aws ecs update-service \
             --cluster devless-cluster \
-            --services devless-orchestrator-bash \
-            --query 'services[0].desiredCount' \
-            --output text 2>/dev/null || echo "0")
-          if [ "$DESIRED" != "0" ]; then
-            aws ecs update-service \
-              --cluster devless-cluster \
-              --service devless-orchestrator-bash \
-              --force-new-deployment \
-              --region "$AWS_REGION"
-          else
-            echo "Service has desired_count=0, skipping redeployment"
-          fi
+            --service devless-orchestrator-agent \
+            --force-new-deployment \
+            --region "$AWS_REGION"

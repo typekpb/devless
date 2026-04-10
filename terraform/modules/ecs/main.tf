@@ -170,15 +170,15 @@ resource "aws_cloudwatch_metric_alarm" "sqs_messages_zero" {
 }
 
 
-# --- Orchestrator Bash (alternative TypeScript/just-bash implementation) ---
+# --- Orchestrator Agent (Strands-based implementation) ---
 
-resource "aws_cloudwatch_log_group" "orchestrator_bash" {
-  name              = "/ecs/${var.project_name}-orchestrator-bash"
+resource "aws_cloudwatch_log_group" "orchestrator_agent" {
+  name              = "/ecs/${var.project_name}-orchestrator-agent"
   retention_in_days = 30
 }
 
-resource "aws_ecs_task_definition" "orchestrator_bash" {
-  family                   = "${var.project_name}-orchestrator-bash"
+resource "aws_ecs_task_definition" "orchestrator_agent" {
+  family                   = "${var.project_name}-orchestrator-agent"
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "1024"
@@ -187,8 +187,8 @@ resource "aws_ecs_task_definition" "orchestrator_bash" {
   task_role_arn            = var.task_role_arn
 
   container_definitions = jsonencode([{
-    name      = "orchestrator-bash"
-    image     = "${var.ecr_repository_bash_url}:${var.ecr_image_tag}"
+    name      = "orchestrator-agent"
+    image     = "${var.ecr_repository_agent_url}:${var.ecr_image_tag}"
     essential = true
 
     environment = [
@@ -209,7 +209,7 @@ resource "aws_ecs_task_definition" "orchestrator_bash" {
     logConfiguration = {
       logDriver = "awslogs"
       options = {
-        "awslogs-group"         = aws_cloudwatch_log_group.orchestrator_bash.name
+        "awslogs-group"         = aws_cloudwatch_log_group.orchestrator_agent.name
         "awslogs-region"        = data.aws_region.current.name
         "awslogs-stream-prefix" = "ecs"
       }
@@ -219,10 +219,10 @@ resource "aws_ecs_task_definition" "orchestrator_bash" {
   }])
 }
 
-resource "aws_ecs_service" "orchestrator_bash" {
-  name            = "${var.project_name}-orchestrator-bash"
+resource "aws_ecs_service" "orchestrator_agent" {
+  name            = "${var.project_name}-orchestrator-agent"
   cluster         = aws_ecs_cluster.main.id
-  task_definition = aws_ecs_task_definition.orchestrator_bash.arn
+  task_definition = aws_ecs_task_definition.orchestrator_agent.arn
   desired_count   = 0  # Disabled by default, enable manually to switch from Python orchestrator
   launch_type     = "FARGATE"
 

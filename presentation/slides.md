@@ -274,6 +274,73 @@ One `terraform apply` deploys everything.
 
 ---
 
+# Alternative Architectures Explored
+
+## just-bash (WASM sandbox)
+
+| Aspect | Feasibility | Notes |
+|--------|-------------|-------|
+| GitHub API (curl) | ✅ Works | Issues, PRs, comments |
+| Read files (API) | ✅ Works | Base64 decode from Contents API |
+| Write files (API) | ✅ Works | One commit per file |
+| Run tests | ❌ No | No binaries (pytest, npm) |
+| Git clone | ❌ No | No git binary |
+
+**Verdict:** Great for API-only workflows (triage, comments, simple file edits). Not viable when tests/builds needed.
+
+---
+
+# Alternative: Docker Sandbox
+
+| Aspect | Original Orchestrator | Docker Sandbox | Docker + Auth Proxy |
+|--------|----------------------|----------------|---------------------|
+| Code complexity | ~800 lines | ~300 lines | ~300 lines + proxy |
+| Git/GitHub ops | Orchestrator handles | LLM via bash | LLM via bash |
+| Secret exposure | ✅ Hidden | ⚠️ Exposed | ✅ Hidden (proxy injects) |
+| Adding features | Code changes | Add SKILL.md | Add SKILL.md |
+| Test execution | Orchestrator runs | LLM runs | LLM runs |
+| Infra complexity | Python only | + Docker | + Docker + proxy |
+
+**Auth Proxy approach:** Network proxy intercepts requests, injects auth headers. Token never enters sandbox.
+
+---
+
+# Security: Why Secrets Matter
+
+## Risks of LLM seeing secrets
+
+| Risk | Example | Impact |
+|------|---------|--------|
+| Accidental logging | LLM runs `env` or `echo $TOKEN` | Token in logs/output |
+| Prompt injection | Malicious issue body tricks LLM | Exfiltrate to attacker URL |
+| Training data | Token sent to LLM provider | Potential leak in future models |
+| Repo secrets | `.env` files in cloned repo | Exposed to LLM context |
+
+## Mitigations
+
+- **Original orchestrator:** Secrets never reach LLM ✅
+- **Docker + proxy:** Network-level auth injection ✅
+- **Docker (simple):** Accept risk, use short-lived scoped tokens ⚠️
+
+---
+
+# Comparison: GitHub Copilot Coding Agent
+
+| Aspect | Devless | GitHub Copilot Agent |
+|--------|---------|---------------------|
+| Setup | Deploy infra (Terraform) | ✅ Zero setup |
+| Cost | ~$15-30/mo + Bedrock | GitHub subscription |
+| LLM choice | Any (Bedrock, OpenAI) | GitHub's models only |
+| Customization | Full control (skills, prompts) | Limited |
+| Self-hosted | ✅ Yes | ❌ No |
+| Data residency | Your AWS region | GitHub's infra |
+| Open source | ✅ Yes | ❌ No |
+
+**When to use Devless:** Need control, custom models, or data residency.
+**When to use Copilot:** Just want it to work, no infra to manage.
+
+---
+
 # Future Ideas
 
 - **LangGraph / Instructor** — smarter routing based on issue content

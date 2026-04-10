@@ -7,7 +7,7 @@ Automated coding agent that picks up GitHub issues, generates code changes, and 
 | Implementation | Stack | Description |
 |---|---|---|
 | [orchestrator/](orchestrator/) | Python + Aider | Main implementation with state machine pipeline |
-| [orchestrator-bash/](orchestrator-bash/) | TypeScript + Vercel AI SDK + just-bash | Alternative with skills-based approach |
+| [orchestrator-agent/](orchestrator-agent/) | Python + Strands + Aider | Agent-based with skills (SKILL.md) |
 
 ## Architecture
 

@@ -6,9 +6,9 @@ variable "ecr_repository_url" {
   type = string
 }
 
-variable "ecr_repository_bash_url" {
+variable "ecr_repository_agent_url" {
   type        = string
-  description = "ECR repository URL for orchestrator-bash"
+  description = "ECR repository URL for orchestrator-agent"
 }
 
 variable "ecr_image_tag" {

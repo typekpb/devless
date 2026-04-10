@@ -58,7 +58,7 @@ module "iam" {
   sqs_queue_arn                 = module.sqs.main_queue_arn
   sqs_dlq_arn                   = module.sqs.dlq_arn
   ecr_repository_arn            = module.ecr.repository_arn
-  ecr_repository_bash_arn       = module.ecr.repository_bash_arn
+  ecr_repository_agent_arn      = module.ecr.repository_agent_arn
   param_arns                    = module.secrets.param_arns
   github_actions_org            = var.github_actions_org
 }
@@ -69,7 +69,7 @@ module "ecs" {
   vpc_id                        = module.vpc.vpc_id
   subnet_ids                    = module.vpc.public_subnet_ids
   ecr_repository_url            = module.ecr.repository_url
-  ecr_repository_bash_url       = module.ecr.repository_bash_url
+  ecr_repository_agent_url      = module.ecr.repository_agent_url
   ecr_image_tag                 = var.ecr_image_tag
   execution_role_arn            = module.iam.ecs_execution_role_arn
   task_role_arn                 = module.iam.ecs_task_role_arn

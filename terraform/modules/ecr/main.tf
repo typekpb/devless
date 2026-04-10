@@ -7,8 +7,8 @@ resource "aws_ecr_repository" "orchestrator" {
   }
 }
 
-resource "aws_ecr_repository" "orchestrator_bash" {
-  name                 = "${var.project_name}-orchestrator-bash"
+resource "aws_ecr_repository" "orchestrator_agent" {
+  name                 = "${var.project_name}-orchestrator-agent"
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {

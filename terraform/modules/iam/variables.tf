@@ -16,9 +16,9 @@ variable "ecr_repository_arn" {
   default     = ""
 }
 
-variable "ecr_repository_bash_arn" {
+variable "ecr_repository_agent_arn" {
   type        = string
-  description = "ARN of the orchestrator-bash ECR repository (unused, kept for compatibility)"
+  description = "ARN of the orchestrator-agent ECR repository (unused, kept for compatibility)"
   default     = ""
 }
 
