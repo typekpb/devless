@@ -19,6 +19,10 @@ style: |
   table {
     font-size: 0.7em;
   }
+  img {
+    max-height: 70%;
+    object-fit: contain;
+  }
 ---
 
 # Devless
@@ -30,14 +34,13 @@ style: |
 
 # The Problem
 
-## What I wanted
+## Problem to solve
 
 - Create issues → get working code
-- Handle multiple issues in parallel
-- Review-ready PRs, not code dumps
+- Review-ready PRs
 - Respond to PR comments, iterate
 
-## The dream
+## Ideal scenario
 
 > Open issue → AI implements → PR opens → Review → Merge
 
@@ -47,10 +50,10 @@ style: |
 
 | Tool | Status | Notes |
 |------|--------|-------|
-| **GitHub Copilot Agent** | ✅ Active | Zero setup, GitHub-only |
-| **Devin** | ✅ Active | $500/mo |
-| **SWE-agent** | ✅ Open source | DIY setup |
-| **Aider** | ✅ Open source | CLI, no GitHub integration |
+| **GitHub Copilot Agent** | ✅ Tested | Works well, zero setup |
+| **Devin** | ❓ Not tested | $500/mo |
+| **SWE-agent** | ❓ Not tested | DIY setup |
+| **Aider** | ✅ Used | CLI, no GitHub integration |
 
 **Gap:** No open, affordable, issue-to-PR with AWS/Bedrock.
 
@@ -58,7 +61,7 @@ style: |
 
 # Solution: Devless
 
-![w:900](../docs/architecture.drawio.svg)
+![bg right:60% contain](../docs/architecture.drawio.svg)
 
 Issue → Webhook → SQS → Orchestrator → Aider → PR
 
@@ -80,7 +83,7 @@ Issue → Webhook → SQS → Orchestrator → Aider → PR
 
 # State Machine Approach
 
-![w:700](../docs/state-machine.svg)
+![bg right:55% contain](../docs/state-machine.svg)
 
 **Pros:** Deterministic, easy to debug
 **Cons:** Rigid, code changes for new workflows
@@ -89,7 +92,7 @@ Issue → Webhook → SQS → Orchestrator → Aider → PR
 
 # Agent-based Approach
 
-![w:700](../docs/agent-flow.svg)
+![bg right:55% contain](../docs/agent-flow.svg)
 
 **Pros:** Flexible, edit SKILL.md for changes
 **Cons:** LLM behavior may vary
