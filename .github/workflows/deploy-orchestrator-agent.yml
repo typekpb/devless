@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'orchestrator-agent/**'
+      - '!orchestrator-agent/README.md'
       - '.github/workflows/deploy-orchestrator-agent.yml'
 
 env:
