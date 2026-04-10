@@ -14,7 +14,8 @@ from github_app import get_github_auth
 def is_issue_closed(repo: str, issue_number: int, token: str) -> bool:
     """Check if an issue or PR is closed."""
     try:
-        gh = Github(token)
+        from github import Auth
+        gh = Github(auth=Auth.Token(token))
         issue = gh.get_repo(repo).get_issue(issue_number)
         return issue.state == "closed"
     except Exception:

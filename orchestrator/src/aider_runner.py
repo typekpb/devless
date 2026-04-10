@@ -127,7 +127,7 @@ def run_aider(
         log.info("Changed to workspace", cwd=os.getcwd())
 
         log.info("Creating InputOutput")
-        io_obj = InputOutput(yes=True)
+        io_obj = InputOutput(yes=True, pretty=False)  # pretty=False suppresses terminal warnings
         log.info("InputOutput created")
 
         log.info("Creating Model", model=model)
@@ -142,8 +142,8 @@ def run_aider(
             auto_test=True,
             test_cmd=test_cmd,
             auto_commits=True,
-            max_reflections=20,  # Allow up to 20 iterations to fix test/build failures
         )
+        coder.max_reflections = 10  # Allow up to 10 iterations to fix test/build failures
         log.info("Aider coder created, running")
 
         # Run Aider - it handles test iteration internally via max_reflections
@@ -153,14 +153,17 @@ def run_aider(
         # Capture output for clarification detection
         last_output = str(coder.io) if hasattr(coder, 'io') else ""
 
-        # If Aider committed, tests passed (including build if in test_cmd)
-        if coder.last_aider_commit_hash:
-            log.info("Aider committed changes", commit=coder.last_aider_commit_hash)
+        # Check both commit AND test outcome - Aider commits before tests run
+        # test_outcome is True if tests passed, False if failed, None if not run
+        if coder.last_aider_commit_hash and coder.test_outcome is not False:
+            log.info("Aider committed changes with passing tests", commit=coder.last_aider_commit_hash)
             success = True
         else:
-            # Aider gave up - couldn't make tests/build pass within max_reflections
-            log.info("Aider gave up without committing")
-            last_output = f"Aider could not complete the task. Tests or build failed after 20 reflection attempts.\n\n{last_output}"
+            # Aider gave up or tests failed
+            log.info("Aider finished without success", 
+                     commit=coder.last_aider_commit_hash, 
+                     test_outcome=coder.test_outcome)
+            last_output = f"Aider could not complete the task. Tests or build failed after reflection attempts.\n\n{last_output}"
 
     except Exception as exc:
         log.info("Aider exception", error=str(exc))

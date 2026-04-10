@@ -75,7 +75,7 @@ def run_aider(
     try:
         os.chdir(repo_path)
         
-        io_obj = InputOutput(yes=True)
+        io_obj = InputOutput(yes=True, pretty=False)  # pretty=False suppresses terminal warnings
         model_obj = Model(model)
         
         # Aider with auto_test will run test_command after each change
@@ -88,8 +88,8 @@ def run_aider(
             auto_test=True,
             test_cmd=test_command,
             auto_commits=True,
-            max_reflections=20,  # Allow more iterations to fix test/build failures
         )
+        coder.max_reflections = 10  # Allow more iterations to fix test/build failures
         
         # Run Aider - it handles test iteration internally
         coder.run(message)
@@ -97,12 +97,13 @@ def run_aider(
         # Capture any output for clarification detection
         last_output = str(coder.io) if hasattr(coder, 'io') else ""
         
-        # If Aider committed, tests passed (including build if in test_command)
-        if coder.last_aider_commit_hash:
+        # Check both commit AND test outcome - Aider commits before tests run
+        # test_outcome is True if tests passed, False if failed, None if not run
+        if coder.last_aider_commit_hash and coder.test_outcome is not False:
             success = True
         else:
-            # Aider gave up - couldn't make tests/build pass within max_reflections
-            last_output = f"Aider could not complete the task. Tests or build failed after {20} reflection attempts.\n\n{last_output}"
+            # Aider gave up or tests failed
+            last_output = f"Aider could not complete the task. Tests or build failed after reflection attempts.\n\n{last_output}"
         
         # Check for clarification signals
         clarification_phrases = [

@@ -81,7 +81,7 @@ def clone_repository() -> str:
 
 @tool
 def create_branch(branch_name: str) -> str:
-    """Create and checkout a new branch.
+    """Create and checkout a new branch, or checkout if it already exists.
     
     Args:
         branch_name: Name for the new branch
@@ -91,8 +91,21 @@ def create_branch(branch_name: str) -> str:
     """
     if not _repo:
         raise RuntimeError("Repository not cloned")
-    _repo.git.checkout("-b", branch_name)
-    return f"Created and checked out branch: {branch_name}"
+    
+    # Check if branch exists locally or remotely
+    try:
+        _repo.git.checkout("-b", branch_name)
+        return f"Created and checked out branch: {branch_name}"
+    except gitpython.GitCommandError:
+        # Branch might exist, try to checkout
+        try:
+            _repo.git.checkout(branch_name)
+            return f"Checked out existing branch: {branch_name}"
+        except gitpython.GitCommandError:
+            # Try fetching and checking out remote branch
+            _repo.git.fetch("origin", branch_name)
+            _repo.git.checkout(branch_name)
+            return f"Checked out remote branch: {branch_name}"
 
 
 @tool
@@ -130,11 +143,12 @@ def get_status() -> dict:
 
 
 @tool
-def push_branch(branch_name: str) -> str:
+def push_branch(branch_name: str, force: bool = False) -> str:
     """Push a branch to the remote repository.
     
     Args:
         branch_name: Name of the branch to push
+        force: Force push (use when branch already exists remotely)
         
     Returns:
         Confirmation message
@@ -151,7 +165,14 @@ def push_branch(branch_name: str) -> str:
         remote.set_url(authed_url)
     
     try:
-        remote.push(refspec=f"{branch_name}:{branch_name}")
+        if force:
+            remote.push(refspec=f"{branch_name}:{branch_name}", force=True)
+        else:
+            # Try normal push first, force if it fails
+            try:
+                remote.push(refspec=f"{branch_name}:{branch_name}")
+            except gitpython.GitCommandError:
+                remote.push(refspec=f"{branch_name}:{branch_name}", force=True)
     finally:
         remote.set_url(original_url)
     
