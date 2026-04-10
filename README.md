@@ -77,7 +77,6 @@ terraform apply
 | `TF_VAR_github_app_id` | your GitHub App ID |
 | `TF_VAR_github_app_private_key` | your GitHub App private key (full PEM content) |
 | `TF_VAR_github_app_installation_id` | your GitHub App installation ID |
-| `TF_VAR_openai_api_key` | your OpenAI API key (optional, only for OpenAI backend) |
 | `TF_VAR_webhook_secret` | your webhook HMAC secret |
 | `TF_VAR_github_actions_org` | your GitHub org name (e.g. `typekpb`) |
 
@@ -157,87 +156,15 @@ Repeat steps 4–6 for every change.
 
 ## LLM backend configuration
 
-The orchestrator uses Amazon Bedrock by default. Configure via `.devless/config.yml` in target repos.
+The orchestrator uses Amazon Bedrock (Claude). Authenticates via the ECS task IAM role — no API keys needed.
 
----
-
-### Option 1: Amazon Bedrock (default)
-
-Authenticates via the ECS task IAM role — no API keys or SSM parameters needed.
-
-The IAM module already includes `bedrock:InvokeModel` permission on the task
-role. To verify or customize, see `terraform/modules/iam/main.tf`.
-
-`.devless/config.yml`:
+`.devless/config.yml` in target repos:
 
 ```yaml
 model: bedrock/eu.anthropic.claude-sonnet-4-20250514-v1:0
 ```
 
-SSM setup: none.
-
----
-
-### Option 2: OpenAI
-
-Requires a single SSM parameter for the API key.
-
-```bash
-aws ssm put-parameter \
-  --name "/devless/openai-api-key" \
-  --type SecureString \
-  --value "sk-..." \
-  --region eu-central-1
-```
-
-Alternatively, set `TF_VAR_openai_api_key` as a GitHub Actions secret or
-environment variable and let Terraform manage the parameter.
-
-`.devless/config.yml`:
-
-```yaml
-model: o3
-```
-
----
-
-### Option 3: Azure OpenAI
-
-Requires three SSM parameters.
-
-```bash
-aws ssm put-parameter \
-  --name "/devless/azure-api-key" \
-  --type SecureString \
-  --value "your-azure-api-key" \
-  --region eu-central-1
-
-aws ssm put-parameter \
-  --name "/devless/azure-api-base" \
-  --type String \
-  --value "https://your-resource.openai.azure.com" \
-  --region eu-central-1
-
-aws ssm put-parameter \
-  --name "/devless/azure-api-version" \
-  --type String \
-  --value "2024-06-01" \
-  --region eu-central-1
-```
-
-Then add the corresponding environment variables (`AZURE_API_KEY`,
-`AZURE_API_BASE`, `AZURE_API_VERSION`) to the ECS task definition in
-`terraform/modules/ecs/main.tf`.
-
-`.devless/config.yml`:
-
-```yaml
-model: azure/gpt-4o
-```
-
----
-
-See [`examples/`](examples/) for ready-to-copy config files for each backend.
+The IAM module includes `bedrock:InvokeModel` permission on the task role.
 
 ---
 
