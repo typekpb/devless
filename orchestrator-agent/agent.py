@@ -80,7 +80,6 @@ def handle_pr_feedback(
     repo: str,
     pr_number: int,
     feedback: str,
-    branch: str,
     github_token: str,
 ) -> str:
     """Handle PR feedback (review comments, etc.)."""
@@ -93,12 +92,11 @@ def handle_pr_feedback(
 
 Repository: {repo}
 PR #{pr_number}
-Branch: {branch}
 
 Feedback:
 {feedback}
 
-Follow the workflow for PR feedback: acknowledge, clone, checkout branch, config, implement, push, complete."""
+Follow the workflow for PR feedback: get PR details, check if devless-managed branch (issue-N pattern), acknowledge, clone, checkout branch, config, implement, push, complete."""
 
         response = agent(prompt)
         return response.message

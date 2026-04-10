@@ -3,22 +3,10 @@
 import os
 import signal
 import sys
-from pathlib import Path
 
 from agent import create_agent, handle_issue, handle_pr_feedback
 from sqs_consumer import poll_message, delete_message, TaskPayload
 from github_app import get_github_auth
-
-
-def get_pr_branch(repo: str, pr_number: int, token: str) -> str | None:
-    """Get the head branch for a PR."""
-    from github import Github
-    try:
-        gh = Github(token)
-        pr = gh.get_repo(repo).get_pull(pr_number)
-        return pr.head.ref
-    except Exception:
-        return None
 
 
 def process_task(payload: TaskPayload, github_token: str, agent) -> None:
@@ -35,38 +23,21 @@ def process_task(payload: TaskPayload, github_token: str, agent) -> None:
         )
     
     elif payload.event_type in ("pr_comment", "pr_review", "pr_issue_comment"):
-        branch = payload.branch or get_pr_branch(
-            payload.repository_full_name,
-            payload.issue_number,
-            github_token,
-        )
-        if not branch:
-            print(f"Could not determine PR branch for #{payload.issue_number}")
-            return
-        
-        # Only handle devless-managed branches
-        import re
-        if not re.match(r"^issue-\d+$", branch):
-            print(f"PR branch {branch} is not devless-managed, skipping")
-            return
-        
+        # Agent will fetch PR details and determine branch via get_pull_request tool
         handle_pr_feedback(
             agent=agent,
             repo=payload.repository_full_name,
             pr_number=payload.issue_number,
             feedback=payload.issue_body,
-            branch=branch,
             github_token=github_token,
         )
     
     elif payload.event_type == "ci_fix":
-        branch = payload.branch or f"issue-{payload.issue_number}"
         handle_pr_feedback(
             agent=agent,
             repo=payload.repository_full_name,
             pr_number=payload.issue_number,
             feedback=f"CI failed. Error:\n\n{payload.issue_body}\n\nPlease fix the failing tests.",
-            branch=branch,
             github_token=github_token,
         )
 

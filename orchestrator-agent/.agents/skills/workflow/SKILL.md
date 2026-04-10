@@ -22,13 +22,16 @@ When handling a new issue (`issues` or `issue_comment` event):
 
 When handling PR feedback (`pr_comment`, `pr_review`, `pr_issue_comment` events):
 
-1. **Acknowledge** - Post comment: "📝 Addressing your feedback..."
-2. **Clone** - Use `clone_repository` tool
-3. **Checkout** - Use `checkout_branch` with the PR's head branch
-4. **Config** - Use `read_project_config`
-5. **Implement** - Use `run_aider` with the feedback
-6. **Push** - Use `push_branch` to push changes
-7. **Complete** - Post comment: "✅ Pushed changes addressing feedback"
+1. **Get PR** - Use `get_pull_request` to get PR details including `head_branch`
+2. **Validate** - Check if branch matches `issue-N` pattern (devless-managed)
+   - If NOT devless-managed: Post comment "This PR was not created by Devless, skipping" and stop
+3. **Acknowledge** - Post comment: "📝 Addressing your feedback..."
+4. **Clone** - Use `clone_repository` tool
+5. **Checkout** - Use `checkout_branch` with the PR's head branch
+6. **Config** - Use `read_project_config`
+7. **Implement** - Use `run_aider` with the feedback
+8. **Push** - Use `push_branch` to push changes
+9. **Complete** - Post comment: "✅ Pushed changes addressing feedback"
 
 ## CI Fix Workflow
 
