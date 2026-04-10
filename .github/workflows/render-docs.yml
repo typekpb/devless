@@ -17,26 +17,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Java (for PlantUML)
-        uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Install PlantUML and Graphviz
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y graphviz
-          wget -q https://github.com/plantuml/plantuml/releases/download/v1.2024.8/plantuml-1.2024.8.jar -O /tmp/plantuml.jar
+          fetch-depth: 0
 
       - name: Render PlantUML diagrams
-        run: |
-          cd docs
-          for puml in *.puml; do
-            echo "Rendering $puml..."
-            java -jar /tmp/plantuml.jar -tsvg "$puml"
-          done
+        uses: grassedge/generate-plantuml-action@v1.5
+        with:
+          path: docs
+          message: ""
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Render drawio diagrams
         uses: rlespinasse/drawio-export-action@v2
