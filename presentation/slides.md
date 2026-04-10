@@ -218,10 +218,43 @@ One `terraform apply` deploys everything.
 
 ## Key insight
 
-> State machines feel safe but become rigid.
-> Agent + tools = less code, same control.
+- State machines feel safe but become rigid.
+- Agent + tools = less code, same control.
 
-**Recommendation:** Start with agent-based.
+---
+
+# Lessons Learned
+
+## Model matters ⚠️
+- Haiku got stuck on simple TypeScript error (unused import)
+- Kept adding `import React` instead of removing it
+- Sonnet understood the fix immediately
+
+**Recommendation:** Start with agent-based, use Sonnet or better.
+
+---
+
+# Coding Styles Comparison
+
+| Style | Feedback Loop | Best For | Target Users |
+|-------|---------------|----------|--------------|
+| **Vibe coding** | ✅ Instant | Quick prototypes | Developers |
+| **Specs (Kiro)** | ⚠️ Upfront planning | New projects only | Architects, PMs |
+| **GitHub Issues** | ⚠️ Slower | Existing projects | Non-devs, PMs |
+
+---
+
+# Coding Styles Comparison
+
+## Specs approach
+- Nice for planning ahead
+- But feels like waterfall 🚫
+- Only works for greenfield projects
+
+## GitHub Issues approach
+- Slower feedback (wait for PR)
+- **Enables non-developers** to request features
+- **Enhancement idea:** Stream Aider output to issue comments
 
 ---
 
