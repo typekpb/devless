@@ -8,9 +8,7 @@ Main orchestrator implementation with state machine pipeline.
 
 ![State Machine](../docs/state-machine.svg)
 
-## How it works
-
-![Sequence Flow](../docs/sequence-flow.svg)
+See [main README](../README.md) for the end-to-end sequence flow.
 
 ## Structure
 

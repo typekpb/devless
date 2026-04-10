@@ -13,7 +13,7 @@ Automated coding agent that picks up GitHub issues, generates code changes, and 
 
 ![Architecture](docs/architecture.drawio.svg)
 
-> To edit: open [`docs/architecture.drawio`](docs/architecture.drawio) in [draw.io](https://app.diagrams.net), then export as `architecture.drawio.svg` to update the rendered diagram.
+> Edit [`docs/architecture.drawio`](docs/architecture.drawio) in [draw.io](https://app.diagrams.net) — CI auto-renders to SVG on push.
 
 Events handled:
 - `issues` / `issue_comment` → full pipeline (clone → code → PR)
