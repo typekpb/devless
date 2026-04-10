@@ -32,6 +32,8 @@ style: |
 
 ⚠️ **This is a Proof of Concept** ⚠️
 
+by Peter Butkovic (peter.butkovic@nordcloud.com)
+
 ---
 
 # The Problem
