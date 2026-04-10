@@ -38,17 +38,12 @@ jobs:
             java -jar /tmp/plantuml.jar -tsvg "$puml"
           done
 
-      - name: Install drawio-export
-        run: |
-          npm install -g @prantlf/draw.io-export
-
       - name: Render drawio diagrams
-        run: |
-          cd docs
-          for drawio in *.drawio; do
-            echo "Rendering $drawio..."
-            drawio-export -f svg "$drawio"
-          done
+        uses: rlespinasse/drawio-export-action@v2
+        with:
+          path: docs
+          format: svg
+          transparent: false
 
       - name: Install Marp CLI
         run: npm install -g @marp-team/marp-cli
