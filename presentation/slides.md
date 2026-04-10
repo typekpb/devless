@@ -4,24 +4,37 @@ theme: default
 paginate: true
 style: |
   section {
-    font-family: 'Segoe UI', sans-serif;
+    font-family: 'IBM Plex Sans', 'Segoe UI', sans-serif;
+    background: #ffffff;
+    color: #1a1f3c;
   }
   h1, h2 {
-    color: #0066cc;
+    color: #1a1f3c;
+    font-weight: 700;
+  }
+  h1 {
+    font-size: 2.5em;
   }
   code {
-    background: #f0f0f0;
-    color: #333;
+    background: #f0f2f5;
+    color: #1a1f3c;
   }
   a {
-    color: #0066cc;
+    color: #1a1f3c;
   }
   table {
     font-size: 0.7em;
   }
+  table th {
+    background: #1a1f3c;
+    color: white;
+  }
   img {
     max-height: 70%;
     object-fit: contain;
+  }
+  section::after {
+    color: #1a1f3c;
   }
 ---
 
