@@ -80,9 +80,12 @@ resource "aws_iam_role_policy" "ecs_task" {
         Resource = var.sqs_queue_arn
       },
       {
-        Effect   = "Allow"
-        Action   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
-        Resource = "arn:aws:bedrock:*::foundation-model/*"
+        Effect = "Allow"
+        Action = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+        Resource = [
+          "arn:aws:bedrock:*::foundation-model/*",
+          "arn:aws:bedrock:*:*:inference-profile/*",
+        ]
       },
     ]
   })
